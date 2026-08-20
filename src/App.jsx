@@ -305,7 +305,7 @@ function App() {
 
         <a href="#home" className="logo-area">
           <img
-            src="image/logo.jpg"
+            src="/image/logo.jpg"
             alt="Kia Fashion Logo"
           />
         </a>
@@ -633,6 +633,7 @@ function App() {
       {/* SAREES ANCHOR */}
 
       <div id="sarees"></div>
+
 
       {/* KIDS ANCHOR */}
 
@@ -1240,22 +1241,31 @@ function App() {
               </h3>
 
               <label className="payment-option">
+
                 <input
                   type="radio"
                   name="payment"
                   defaultChecked
                 />
+
                 Cash on Delivery
+
               </label>
 
               <label className="payment-option disabled">
+
                 <input
                   type="radio"
                   name="payment"
                   disabled
                 />
+
                 Online Payment
-                <span>Coming Soon</span>
+
+                <span>
+                  Coming Soon
+                </span>
+
               </label>
 
 
@@ -1273,6 +1283,7 @@ function App() {
                 </strong>
 
               </div>
+
 
               <button
                 className="place-order"
