@@ -6,45 +6,41 @@ const sarees = [
     id: 1,
     name: "The Rose Silk Saree",
     price: 3499,
-    image: "/image/saree1.jpg",
-    category: "Women / Sarees",
-    rating: 4.6,
+    oldPrice: 4299,
+    rating: 4.5,
     reviews: 128,
-    description:
-      "A graceful rose-toned silk saree designed for weddings, festive occasions and elegant celebrations.",
+    image: "/image/saree1.jpg",
+    category: "Silk Saree",
   },
   {
     id: 2,
     name: "Emerald Banarasi Saree",
     price: 4299,
-    image: "/image/saree2.jpg",
-    category: "Women / Sarees",
-    rating: 4.8,
+    oldPrice: 5499,
+    rating: 4.7,
     reviews: 96,
-    description:
-      "A rich emerald Banarasi-inspired saree featuring a timeless festive look with elegant detailing.",
+    image: "/image/saree2.jpg",
+    category: "Banarasi Saree",
   },
   {
     id: 3,
     name: "Festive Pink Saree",
     price: 2999,
+    oldPrice: 3799,
+    rating: 4.4,
+    reviews: 84,
     image: "/image/saree3.jpg",
-    category: "Women / Sarees",
-    rating: 4.5,
-    reviews: 74,
-    description:
-      "A beautiful festive pink saree made for celebrations, family functions and memorable occasions.",
+    category: "Festive Saree",
   },
   {
     id: 4,
     name: "Royal Party Saree",
     price: 3899,
-    image: "/image/saree4.jpg",
-    category: "Women / Sarees",
-    rating: 4.7,
+    oldPrice: 4699,
+    rating: 4.6,
     reviews: 112,
-    description:
-      "A sophisticated party saree with a royal finish, perfect for evening celebrations and special events.",
+    image: "/image/saree4.jpg",
+    category: "Designer Saree",
   },
 ];
 
@@ -53,45 +49,41 @@ const kids = [
     id: 5,
     name: "Little Celebration",
     price: 1599,
+    oldPrice: 1999,
+    rating: 4.5,
+    reviews: 64,
     image: "/image/kids1.jpg",
     category: "Kidswear",
-    rating: 4.6,
-    reviews: 61,
-    description:
-      "A comfortable and stylish festive outfit designed for little celebrations.",
   },
   {
     id: 6,
     name: "Little Festive Edit",
     price: 1899,
+    oldPrice: 2399,
+    rating: 4.6,
+    reviews: 71,
     image: "/image/kids2.jpg",
     category: "Kidswear",
-    rating: 4.8,
-    reviews: 83,
-    description:
-      "A charming festive look combining comfort, colour and playful style for kids.",
   },
   {
     id: 7,
     name: "Classic Kidswear",
     price: 1399,
+    oldPrice: 1799,
+    rating: 4.3,
+    reviews: 52,
     image: "/image/kids3.jpg",
     category: "Kidswear",
-    rating: 4.5,
-    reviews: 48,
-    description:
-      "Classic everyday kidswear designed to keep little ones comfortable and stylish.",
   },
   {
     id: 8,
     name: "Party Day Look",
     price: 1699,
+    oldPrice: 2199,
+    rating: 4.5,
+    reviews: 59,
     image: "/image/kids4.jpg",
     category: "Kidswear",
-    rating: 4.7,
-    reviews: 57,
-    description:
-      "A fun party-ready outfit created for birthdays, family events and special moments.",
   },
 ];
 
@@ -100,85 +92,39 @@ const allProducts = [...sarees, ...kids];
 export default function App() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
-  const [menu, setMenu] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [cartOpen, setCartOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [quantity, setQuantity] = useState(1);
-  const [checkout, setCheckout] = useState(false);
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("featured");
+  const [cartOpen, setCartOpen] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [preview, setPreview] = useState(null);
 
-  const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-
-  const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
-
-  const formatPrice = (price) =>
-    `₹${price.toLocaleString("en-IN")}`;
-
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({
-      behavior: "smooth",
-    });
-    setMenu(false);
-  };
-
-  const openProduct = (product) => {
-    setSelectedProduct(product);
-    setQuantity(1);
-    setCartOpen(false);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
-
-  const addToCart = (product, qty = 1) => {
-    setCart((currentCart) => {
-      const existing = currentCart.find(
-        (item) => item.id === product.id
-      );
+  const addToCart = (product) => {
+    setCart((current) => {
+      const existing = current.find((item) => item.id === product.id);
 
       if (existing) {
-        return currentCart.map((item) =>
+        return current.map((item) =>
           item.id === product.id
-            ? {
-                ...item,
-                quantity: item.quantity + qty,
-              }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
 
-      return [
-        ...currentCart,
-        {
-          ...product,
-          quantity: qty,
-        },
-      ];
+      return [...current, { ...product, quantity: 1 }];
     });
   };
 
   const removeFromCart = (id) => {
-    setCart((currentCart) =>
-      currentCart.filter((item) => item.id !== id)
-    );
+    setCart((current) => current.filter((item) => item.id !== id));
   };
 
-  const changeCartQuantity = (id, amount) => {
-    setCart((currentCart) =>
-      currentCart
+  const changeQuantity = (id, amount) => {
+    setCart((current) =>
+      current
         .map((item) =>
           item.id === id
-            ? {
-                ...item,
-                quantity: item.quantity + amount,
-              }
+            ? { ...item, quantity: Math.max(1, item.quantity + amount) }
             : item
         )
         .filter((item) => item.quantity > 0)
@@ -197,99 +143,110 @@ export default function App() {
     });
   };
 
-  const handleSearch = (value) => {
-    setSearch(value);
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+    });
+    setMenu(false);
+  };
 
-    if (!value.trim()) {
-      setSearchResults([]);
-      return;
-    }
+  const cartCount = cart.reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
 
-    const results = allProducts.filter((product) =>
-      `${product.name} ${product.category}`
+  const cartTotal = cart.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
+  const filteredProducts = allProducts
+    .filter((product) => {
+      const matchesSearch = product.name
         .toLowerCase()
-        .includes(value.toLowerCase())
-    );
+        .includes(search.toLowerCase());
 
-    setSearchResults(results);
-  };
+      const matchesCategory =
+        category === "All" || product.category === category;
 
-  const buyNow = (product, qty = 1) => {
-    addToCart(product, qty);
-    setSelectedProduct(null);
-    setCheckout(true);
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      if (sort === "low") return a.price - b.price;
+      if (sort === "high") return b.price - a.price;
+      if (sort === "rating") return b.rating - a.rating;
+
+      return 0;
     });
-  };
-
-  const placeOrder = () => {
-    setCart([]);
-    setCheckout(false);
-    setOrderPlaced(true);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  };
 
   const ProductCard = ({ product }) => {
-    const wished = wishlist.some(
-      (item) => item.id === product.id
-    );
+    const liked = wishlist.some((item) => item.id === product.id);
 
     return (
-      <article className="product">
-        <div
-          className="product-image"
-          onClick={() => openProduct(product)}
-        >
+      <article className="amazon-product-card">
+        <div className="product-image-box">
           <img src={product.image} alt={product.name} />
 
           <button
-            className={`heart ${wished ? "liked" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleWishlist(product);
-            }}
+            className={`wishlist-btn ${liked ? "liked" : ""}`}
+            onClick={() => toggleWishlist(product)}
           >
-            {wished ? "♥" : "♡"}
+            {liked ? "♥" : "♡"}
           </button>
 
-          <span className="product-badge">
-            KIA CHOICE
-          </span>
-        </div>
-
-        <div className="product-info">
-          <span>{product.category}</span>
-
-          <h3
-            onClick={() => openProduct(product)}
-            className="clickable-title"
-          >
-            {product.name}
-          </h3>
-
-          <div className="rating">
-            <strong>{product.rating}</strong>
-            <span>★★★★★</span>
-            <small>({product.reviews})</small>
-          </div>
-
-          <strong className="product-price">
-            {formatPrice(product.price)}
-          </strong>
-
-          <p>FREE Delivery · Easy Returns</p>
+          <span className="deal-badge">Deal</span>
 
           <button
+            className="quick-view-btn"
+            onClick={() => setPreview(product)}
+          >
+            Quick View
+          </button>
+        </div>
+
+        <div className="amazon-product-info">
+          <span className="product-category">
+            {product.category}
+          </span>
+
+          <h3>{product.name}</h3>
+
+          <div className="rating-row">
+            <strong>{product.rating}</strong>
+            <span className="stars">★★★★★</span>
+            <span className="review-count">
+              ({product.reviews})
+            </span>
+          </div>
+
+          <div className="price-row">
+            <span className="price">₹{product.price.toLocaleString()}</span>
+            <span className="old-price">
+              ₹{product.oldPrice.toLocaleString()}
+            </span>
+          </div>
+
+          <p className="delivery">
+            <strong>FREE Delivery</strong>
+            <br />
+            Available for Cash on Delivery
+          </p>
+
+          <button
+            className="add-cart-btn"
             onClick={() => addToCart(product)}
-            className="add-button"
           >
             Add to Cart
+          </button>
+
+          <button
+            className="buy-btn"
+            onClick={() => {
+              addToCart(product);
+              setCartOpen(true);
+            }}
+          >
+            Buy Now
           </button>
         </div>
       </article>
@@ -299,8 +256,7 @@ export default function App() {
   return (
     <div className="kia-page">
 
-      {/* ANNOUNCEMENT */}
-
+      {/* TOP ANNOUNCEMENT */}
       <div className="announcement">
         FREE SHIPPING ON ORDERS OVER ₹2,500
         <span>•</span>
@@ -309,8 +265,7 @@ export default function App() {
         COD AVAILABLE
       </div>
 
-      {/* HEADER */}
-
+      {/* AMAZON STYLE HEADER */}
       <header className="amazon-header">
 
         <button
@@ -321,478 +276,595 @@ export default function App() {
         </button>
 
         <button
-          className="logo"
-          onClick={() => {
-            setSelectedProduct(null);
-            setCheckout(false);
-            setOrderPlaced(false);
-            scrollTo("home");
-          }}
+          className="amazon-logo"
+          onClick={() => scrollTo("home")}
         >
-          <span>KIA FASHION</span>
-          <small>Fashion for Ki & Kiddos</small>
+          <span>KIA</span>
+          <small>FASHION</small>
         </button>
 
-        <div className="search-container">
+        <div className="delivery-location">
+          <span>Deliver to</span>
+          <strong>India ▾</strong>
+        </div>
+
+        <div className="search-box">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="All">All</option>
+            <option value="Silk Saree">Silk Saree</option>
+            <option value="Banarasi Saree">Banarasi Saree</option>
+            <option value="Festive Saree">Festive Saree</option>
+            <option value="Designer Saree">Designer Saree</option>
+            <option value="Kidswear">Kidswear</option>
+          </select>
+
           <input
             type="text"
-            placeholder="Search Kia Fashion..."
+            placeholder="Search Kia Fashion"
             value={search}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
           />
 
           <button>🔍</button>
-
-          {searchResults.length > 0 && (
-            <div className="search-results">
-              {searchResults.map((product) => (
-                <button
-                  key={product.id}
-                  onClick={() => {
-                    openProduct(product);
-                    setSearch("");
-                    setSearchResults([]);
-                  }}
-                >
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                  />
-
-                  <div>
-                    <strong>{product.name}</strong>
-                    <span>{formatPrice(product.price)}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        <nav className={menu ? "nav open" : "nav"}>
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              scrollTo("home");
-            }}
-          >
-            Home
+        <button
+          className="header-account"
+          onClick={() => alert("Welcome to Kia Fashion")}
+        >
+          <span>Hello, sign in</span>
+          <strong>Account & Lists ▾</strong>
+        </button>
+
+        <button
+          className="header-orders"
+          onClick={() =>
+            alert("Your orders will appear here.")
+          }
+        >
+          <span>Returns</span>
+          <strong>& Orders</strong>
+        </button>
+
+        <button
+          className="header-cart"
+          onClick={() => setCartOpen(true)}
+        >
+          <span className="cart-icon">🛒</span>
+          <b>{cartCount}</b>
+          <strong>Cart</strong>
+        </button>
+      </header>
+
+      {/* NAVIGATION */}
+      <nav className={`amazon-nav ${menu ? "open" : ""}`}>
+        <button onClick={() => scrollTo("home")}>
+          ☰ All
+        </button>
+
+        <button onClick={() => scrollTo("shop")}>
+          Sarees
+        </button>
+
+        <button onClick={() => scrollTo("kids")}>
+          Kidswear
+        </button>
+
+        <button onClick={() => scrollTo("collections")}>
+          Collections
+        </button>
+
+        <button onClick={() => scrollTo("style-studio")}>
+          Style Studio
+        </button>
+
+        <button onClick={() => scrollTo("about")}>
+          About Kia
+        </button>
+
+        <button onClick={() => scrollTo("contact")}>
+          Customer Service
+        </button>
+      </nav>
+
+      {/* HERO */}
+      <main>
+
+        <section id="home" className="amazon-hero">
+
+          <div className="hero-overlay">
+            <span>THE NEW KIA COLLECTION</span>
+
+            <h1>
+              Elegance,
+              <br />
+              <em>reimagined.</em>
+            </h1>
+
+            <p>
+              Discover graceful sarees and beautiful
+              kidswear designed for moments worth remembering.
+            </p>
+
+            <button onClick={() => scrollTo("shop")}>
+              Shop Now →
+            </button>
+          </div>
+
+          <img
+            src="/image/hero-saree.jpg"
+            alt="Kia Fashion Collection"
+          />
+        </section>
+
+        {/* SHOPPING FEATURES */}
+        <section className="shopping-features">
+
+          <div>
+            <span>🚚</span>
+            <div>
+              <strong>Free Delivery</strong>
+              <p>On orders over ₹2,500</p>
+            </div>
+          </div>
+
+          <div>
+            <span>↩️</span>
+            <div>
+              <strong>Easy Returns</strong>
+              <p>Simple return policy</p>
+            </div>
+          </div>
+
+          <div>
+            <span>🔒</span>
+            <div>
+              <strong>Secure Payments</strong>
+              <p>100% secure checkout</p>
+            </div>
+          </div>
+
+          <div>
+            <span>💳</span>
+            <div>
+              <strong>Cash on Delivery</strong>
+              <p>Available across India</p>
+            </div>
+          </div>
+
+        </section>
+
+        {/* COLLECTIONS */}
+        <section id="collections" className="amazon-section">
+
+          <div className="section-heading">
+            <div>
+              <span className="kicker">
+                CURATED FOR YOU
+              </span>
+
+              <h2>
+                Shop by <em>collection</em>
+              </h2>
+            </div>
+
+            <button onClick={() => scrollTo("shop")}>
+              See all
+            </button>
+          </div>
+
+          <div className="collection-grid">
+
+            <button
+              onClick={() => {
+                setCategory("Silk Saree");
+                scrollTo("shop");
+              }}
+            >
+              <img
+                src="/image/saree1.jpg"
+                alt="Silk Sarees"
+              />
+              <span>Silk Sarees</span>
+              <small>Shop now →</small>
+            </button>
+
+            <button
+              onClick={() => {
+                setCategory("Banarasi Saree");
+                scrollTo("shop");
+              }}
+            >
+              <img
+                src="/image/saree2.jpg"
+                alt="Banarasi Sarees"
+              />
+              <span>Banarasi Sarees</span>
+              <small>Shop now →</small>
+            </button>
+
+            <button
+              onClick={() => {
+                setCategory("Festive Saree");
+                scrollTo("shop");
+              }}
+            >
+              <img
+                src="/image/saree3.jpg"
+                alt="Festive Sarees"
+              />
+              <span>Festive Edit</span>
+              <small>Shop now →</small>
+            </button>
+
+            <button
+              onClick={() => {
+                setCategory("Kidswear");
+                scrollTo("kids");
+              }}
+            >
+              <img
+                src="/image/kids1.jpg"
+                alt="Kidswear"
+              />
+              <span>Kidswear</span>
+              <small>Shop now →</small>
+            </button>
+
+          </div>
+        </section>
+
+        {/* PRODUCTS */}
+        <section id="shop" className="amazon-section products-section">
+
+          <div className="section-heading">
+
+            <div>
+              <span className="kicker">
+                KIA FASHION STORE
+              </span>
+
+              <h2>
+                Best Sellers & <em>Deals</em>
+              </h2>
+            </div>
+
+            <span className="results-count">
+              {filteredProducts.length} results
+            </span>
+          </div>
+
+          <div className="shop-toolbar">
+
+            <span>
+              Showing products for you
+            </span>
+
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              <option value="featured">
+                Sort: Featured
+              </option>
+
+              <option value="low">
+                Price: Low to High
+              </option>
+
+              <option value="high">
+                Price: High to Low
+              </option>
+
+              <option value="rating">
+                Customer Rating
+              </option>
+            </select>
+
+          </div>
+
+          <div className="amazon-product-grid">
+
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
+              ))
+            ) : (
+              <div className="no-products">
+                <h3>No products found</h3>
+                <p>
+                  Try searching for another saree or
+                  kidswear product.
+                </p>
+
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setCategory("All");
+                  }}
+                >
+                  Show All Products
+                </button>
+              </div>
+            )}
+
+          </div>
+        </section>
+
+        {/* FESTIVE BANNER */}
+        <section className="festive-banner">
+
+          <div>
+            <span className="kicker">
+              THE FESTIVE EDIT
+            </span>
+
+            <h2>
+              For celebrations
+              <br />
+              <em>that stay with you.</em>
+            </h2>
+
+            <p>
+              Rich colours, graceful drapes and details
+              designed for your most memorable occasions.
+            </p>
+
+            <button onClick={() => scrollTo("shop")}>
+              Explore Festive →
+            </button>
+          </div>
+
+          <img
+            src="/image/festive-collection.jpg"
+            alt="Festive Collection"
+          />
+
+        </section>
+
+        {/* KIDS */}
+        <section id="kids" className="amazon-section">
+
+          <div className="section-heading">
+
+            <div>
+              <span className="kicker">
+                FOR KI & KIDDOS
+              </span>
+
+              <h2>
+                Little style,
+                <em> big moments.</em>
+              </h2>
+            </div>
+
+            <button
+              onClick={() => {
+                setCategory("Kidswear");
+                scrollTo("shop");
+              }}
+            >
+              Shop Kidswear →
+            </button>
+
+          </div>
+
+          <div className="amazon-product-grid">
+
+            {kids.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+              />
+            ))}
+
+          </div>
+
+        </section>
+
+        {/* STYLE STUDIO */}
+        <section id="style-studio" className="style-section">
+
+          <div className="section-heading">
+            <div>
+              <span className="kicker">
+                KIA STYLE STUDIO
+              </span>
+
+              <h2>
+                Dress for <em>the moment.</em>
+              </h2>
+            </div>
+          </div>
+
+          <div className="style-grid">
+
+            <button onClick={() => scrollTo("shop")}>
+              <img
+                src="/image/wedding-edit.jpg"
+                alt="Wedding"
+              />
+              <span>Wedding Edit →</span>
+            </button>
+
+            <button onClick={() => scrollTo("shop")}>
+              <img
+                src="/image/festive-collection.jpg"
+                alt="Festival"
+              />
+              <span>Festival Edit →</span>
+            </button>
+
+            <button onClick={() => scrollTo("shop")}>
+              <img
+                src="/image/everyday-edit.jpg"
+                alt="Everyday"
+              />
+              <span>Everyday Edit →</span>
+            </button>
+
+          </div>
+
+        </section>
+
+        {/* ABOUT */}
+        <section id="about" className="about-section">
+
+          <img
+            src="/image/about-kia-fashion.jpg"
+            alt="About Kia Fashion"
+          />
+
+          <div>
+            <span className="kicker">
+              OUR STORY
+            </span>
+
+            <h2>
+              Fashion for <em>Ki & Kiddos.</em>
+            </h2>
+
+            <p>
+              Kia Fashion brings elegant Indian fashion
+              and joyful kidswear together in a warm,
+              modern shopping experience.
+            </p>
+
+            <p>
+              Beautiful fashion should feel effortless,
+              personal and memorable.
+            </p>
+
+            <button onClick={() => scrollTo("contact")}>
+              Discover Kia Fashion →
+            </button>
+          </div>
+
+        </section>
+
+        {/* NEWSLETTER */}
+        <section className="newsletter">
+
+          <span className="kicker">
+            JOIN THE KIA COMMUNITY
+          </span>
+
+          <h2>
+            Something beautiful
+            <br />
+            <em>is always coming.</em>
+          </h2>
+
+          <p>
+            Sign up for new collections, styling
+            inspiration and special offers.
+          </p>
+
+          <div className="newsletter-form">
+
+            <input
+              type="email"
+              placeholder="Your email address"
+            />
+
+            <button
+              onClick={() =>
+                alert(
+                  "Thank you for joining Kia Fashion!"
+                )
+              }
+            >
+              Subscribe →
+            </button>
+
+          </div>
+
+        </section>
+
+      </main>
+
+      {/* FOOTER */}
+      <footer id="contact" className="footer">
+
+        <div className="footer-brand">
+          <span>KIA FASHION</span>
+          <p>
+            Fashion for Ki & Kiddos.
+          </p>
+        </div>
+
+        <div>
+          <h4>Shop</h4>
+
+          <button onClick={() => scrollTo("shop")}>
+            Sarees
           </button>
 
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              scrollTo("shop");
-            }}
-          >
-            Shop
-          </button>
-
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              scrollTo("collections");
-            }}
-          >
-            Collections
-          </button>
-
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              scrollTo("kids");
-            }}
-          >
+          <button onClick={() => scrollTo("kids")}>
             Kidswear
           </button>
 
-          <button
-            onClick={() => {
-              setSelectedProduct(null);
-              scrollTo("about");
-            }}
-          >
-            About
+          <button onClick={() => scrollTo("collections")}>
+            Collections
           </button>
-        </nav>
-
-        <div className="header-actions">
-
-          <button
-            className="account-button"
-            onClick={() =>
-              alert(
-                "Welcome to Kia Fashion!\n\nAccount & Orders will be available soon."
-              )
-            }
-          >
-            <small>Hello, Sign in</small>
-            <strong>Account & Orders</strong>
-          </button>
-
-          <button
-            className="wishlist-button"
-            onClick={() =>
-              alert(
-                `You have ${wishlist.length} item(s) in your wishlist.`
-              )
-            }
-          >
-            ♡
-          </button>
-
-          <button
-            className="cart-button"
-            onClick={() => {
-              setSelectedProduct(null);
-              setCheckout(false);
-              setCartOpen(true);
-            }}
-          >
-            🛒
-            <span>Cart</span>
-            <sup>{cartCount}</sup>
-          </button>
-
         </div>
-      </header>
 
-      {/* PRODUCT PAGE */}
+        <div>
+          <h4>Explore</h4>
 
-      {selectedProduct && !checkout && !orderPlaced && (
-        <section className="product-detail-page">
-
-          <div className="breadcrumb">
-            Home › {selectedProduct.category} ›{" "}
-            {selectedProduct.name}
-          </div>
-
-          <button
-            className="back-button"
-            onClick={() => setSelectedProduct(null)}
-          >
-            ← Back to Shopping
+          <button onClick={() => scrollTo("style-studio")}>
+            Style Studio
           </button>
 
-          <div className="product-detail">
-
-            <div className="detail-image">
-              <img
-                src={selectedProduct.image}
-                alt={selectedProduct.name}
-              />
-            </div>
-
-            <div className="detail-content">
-
-              <span className="detail-category">
-                {selectedProduct.category}
-              </span>
-
-              <h1>{selectedProduct.name}</h1>
-
-              <div className="detail-rating">
-                <strong>
-                  {selectedProduct.rating} ★
-                </strong>
-
-                <span>
-                  {selectedProduct.reviews} ratings & reviews
-                </span>
-              </div>
-
-              <hr />
-
-              <p className="price-label">
-                Deal Price
-              </p>
-
-              <div className="detail-price">
-                {formatPrice(selectedProduct.price)}
-              </div>
-
-              <p className="tax-text">
-                Inclusive of all taxes
-              </p>
-
-              <div className="offer-box">
-                <strong>Special Offer</strong>
-                <p>
-                  Get free shipping on orders above ₹2,500.
-                </p>
-              </div>
-
-              <div className="delivery-box">
-                <strong>🚚 Delivery</strong>
-                <p>
-                  FREE Delivery available
-                </p>
-                <small>
-                  Usually delivered within 3–5 business days.
-                </small>
-              </div>
-
-              <p className="detail-description">
-                {selectedProduct.description}
-              </p>
-
-              <div className="quantity-section">
-                <strong>Quantity</strong>
-
-                <div className="quantity-control">
-                  <button
-                    onClick={() =>
-                      setQuantity((q) => Math.max(1, q - 1))
-                    }
-                  >
-                    −
-                  </button>
-
-                  <span>{quantity}</span>
-
-                  <button
-                    onClick={() =>
-                      setQuantity((q) => q + 1)
-                    }
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <div className="detail-actions">
-
-                <button
-                  className="detail-cart"
-                  onClick={() => {
-                    addToCart(
-                      selectedProduct,
-                      quantity
-                    );
-                    setCartOpen(true);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  🛒 Add to Cart
-                </button>
-
-                <button
-                  className="buy-now"
-                  onClick={() =>
-                    buyNow(
-                      selectedProduct,
-                      quantity
-                    )
-                  }
-                >
-                  Buy Now
-                </button>
-
-              </div>
-
-              <button
-                className="wishlist-detail"
-                onClick={() =>
-                  toggleWishlist(selectedProduct)
-                }
-              >
-                ♡ Add to Wishlist
-              </button>
-
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* CHECKOUT */}
-
-      {checkout && !orderPlaced && (
-        <section className="checkout-page">
-
-          <button
-            className="back-button"
-            onClick={() => setCheckout(false)}
-          >
-            ← Back to Cart
+          <button onClick={() => scrollTo("about")}>
+            Our Story
           </button>
 
-          <h1>Checkout</h1>
-
-          <div className="checkout-layout">
-
-            <div className="checkout-form">
-
-              <div className="checkout-card">
-                <h2>1. Delivery Address</h2>
-
-                <input
-                  type="text"
-                  placeholder="Full Name"
-                />
-
-                <input
-                  type="text"
-                  placeholder="Mobile Number"
-                />
-
-                <textarea
-                  placeholder="Complete Address"
-                  rows="4"
-                />
-
-                <div className="address-row">
-                  <input
-                    type="text"
-                    placeholder="City"
-                  />
-
-                  <input
-                    type="text"
-                    placeholder="PIN Code"
-                  />
-                </div>
-              </div>
-
-              <div className="checkout-card">
-                <h2>2. Payment Method</h2>
-
-                <label className="payment-option">
-                  <input
-                    type="radio"
-                    name="payment"
-                    defaultChecked
-                  />
-                  Cash on Delivery
-                </label>
-
-                <label className="payment-option">
-                  <input
-                    type="radio"
-                    name="payment"
-                  />
-                  UPI / Online Payment
-                </label>
-              </div>
-
-            </div>
-
-            <div className="order-summary">
-
-              <h2>Order Summary</h2>
-
-              {cart.map((item) => (
-                <div
-                  className="summary-item"
-                  key={item.id}
-                >
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                  />
-
-                  <div>
-                    <strong>{item.name}</strong>
-                    <p>
-                      Qty: {item.quantity}
-                    </p>
-                  </div>
-
-                  <b>
-                    {formatPrice(
-                      item.price * item.quantity
-                    )}
-                  </b>
-                </div>
-              ))}
-
-              <hr />
-
-              <div className="summary-line">
-                <span>Items</span>
-                <span>{formatPrice(cartTotal)}</span>
-              </div>
-
-              <div className="summary-line">
-                <span>Delivery</span>
-                <span>
-                  {cartTotal >= 2500
-                    ? "FREE"
-                    : "₹99"}
-                </span>
-              </div>
-
-              <div className="summary-total">
-                <span>Order Total</span>
-
-                <strong>
-                  {formatPrice(
-                    cartTotal +
-                      (cartTotal >= 2500 ? 0 : 99)
-                  )}
-                </strong>
-              </div>
-
-              <button
-                className="place-order"
-                onClick={placeOrder}
-              >
-                Place Your Order
-              </button>
-
-            </div>
-
-          </div>
-        </section>
-      )}
-
-      {/* ORDER SUCCESS */}
-
-      {orderPlaced && (
-        <section className="order-success">
-
-          <div className="success-icon">
-            ✓
-          </div>
-
-          <h1>Order Placed Successfully!</h1>
-
-          <p>
-            Thank you for shopping with Kia Fashion.
-          </p>
-
-          <p>
-            Your order has been confirmed.
-          </p>
-
           <button
-            className="button dark"
-            onClick={() => {
-              setOrderPlaced(false);
-              scrollTo("shop");
-            }}
+            onClick={() =>
+              alert("Contact: hello@kiafashion.in")
+            }
           >
-            Continue Shopping →
+            Contact
           </button>
+        </div>
 
-        </section>
-      )}
+        <div>
+          <h4>Customer Care</h4>
 
-      {/* CART */}
+          <p>Mon–Sat, 10 AM–6 PM</p>
+          <p>Easy returns</p>
+          <p>COD available</p>
+          <p>Free shipping over ₹2,500</p>
+        </div>
 
-      {cartOpen && !checkout && (
+      </footer>
+
+      <div className="copyright">
+        © {new Date().getFullYear()} Kia Fashion.
+        All rights reserved.
+      </div>
+
+      {/* CART DRAWER */}
+      {cartOpen && (
         <div
           className="cart-overlay"
           onClick={() => setCartOpen(false)}
         >
-
           <aside
-            className="cart-panel"
+            className="cart-drawer"
             onClick={(e) => e.stopPropagation()}
           >
 
             <div className="cart-header">
               <h2>
-                Shopping Cart
+                Shopping Cart ({cartCount})
               </h2>
 
               <button
@@ -803,16 +875,16 @@ export default function App() {
             </div>
 
             {cart.length === 0 ? (
-
               <div className="empty-cart">
-                <div>🛒</div>
 
-                <h3>
-                  Your cart is empty
-                </h3>
+                <div className="empty-cart-icon">
+                  🛒
+                </div>
+
+                <h3>Your Kia Fashion Cart is empty</h3>
 
                 <p>
-                  Add something beautiful from Kia Fashion.
+                  Add some beautiful products to your cart.
                 </p>
 
                 <button
@@ -823,10 +895,9 @@ export default function App() {
                 >
                   Start Shopping
                 </button>
+
               </div>
-
             ) : (
-
               <>
                 <div className="cart-items">
 
@@ -841,21 +912,19 @@ export default function App() {
                         alt={item.name}
                       />
 
-                      <div className="cart-item-info">
+                      <div className="cart-item-details">
 
-                        <strong>
-                          {item.name}
-                        </strong>
+                        <h3>{item.name}</h3>
 
-                        <span>
-                          {formatPrice(item.price)}
-                        </span>
+                        <p>
+                          ₹{item.price.toLocaleString()}
+                        </p>
 
-                        <div className="cart-quantity">
+                        <div className="quantity">
 
                           <button
                             onClick={() =>
-                              changeCartQuantity(
+                              changeQuantity(
                                 item.id,
                                 -1
                               )
@@ -864,13 +933,11 @@ export default function App() {
                             −
                           </button>
 
-                          <span>
-                            {item.quantity}
-                          </span>
+                          <span>{item.quantity}</span>
 
                           <button
                             onClick={() =>
-                              changeCartQuantity(
+                              changeQuantity(
                                 item.id,
                                 1
                               )
@@ -882,56 +949,47 @@ export default function App() {
                         </div>
 
                         <button
-                          className="remove-cart"
+                          className="remove-item"
                           onClick={() =>
                             removeFromCart(item.id)
                           }
                         >
-                          Remove
+                          Delete
                         </button>
 
                       </div>
-
-                      <strong>
-                        {formatPrice(
-                          item.price *
-                            item.quantity
-                        )}
-                      </strong>
 
                     </div>
                   ))}
 
                 </div>
 
-                <div className="cart-footer">
-
-                  <div className="cart-total">
-                    <span>
-                      Subtotal
-                    </span>
-
-                    <strong>
-                      {formatPrice(cartTotal)}
-                    </strong>
-                  </div>
+                <div className="cart-summary">
 
                   <p>
-                    FREE delivery on orders over ₹2,500
+                    Subtotal ({cartCount} items)
                   </p>
 
+                  <h2>
+                    ₹{cartTotal.toLocaleString()}
+                  </h2>
+
                   <button
-                    className="checkout-button"
-                    onClick={() => {
-                      setCartOpen(false);
-                      setCheckout(true);
-                      window.scrollTo({
-                        top: 0,
-                        behavior: "smooth",
-                      });
-                    }}
+                    className="checkout-btn"
+                    onClick={() =>
+                      alert(
+                        "Checkout will be added next!"
+                      )
+                    }
                   >
                     Proceed to Checkout
+                  </button>
+
+                  <button
+                    className="continue-btn"
+                    onClick={() => setCartOpen(false)}
+                  >
+                    Continue Shopping
                   </button>
 
                 </div>
@@ -942,625 +1000,72 @@ export default function App() {
         </div>
       )}
 
-      {/* HOME */}
+      {/* QUICK VIEW */}
+      {preview && (
+        <div
+          className="quick-modal-overlay"
+          onClick={() => setPreview(null)}
+        >
 
-      {!selectedProduct &&
-        !checkout &&
-        !orderPlaced && (
-          <main>
+          <div
+            className="quick-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
 
-            <section
-              id="home"
-              className="hero"
+            <button
+              className="modal-close"
+              onClick={() => setPreview(null)}
             >
+              ×
+            </button>
 
-              <div className="hero-content">
+            <img
+              src={preview.image}
+              alt={preview.name}
+            />
 
-                <span className="kicker">
-                  THE NEW KIA COLLECTION
+            <div className="modal-info">
+
+              <span>{preview.category}</span>
+
+              <h2>{preview.name}</h2>
+
+              <div className="rating-row">
+                <strong>{preview.rating}</strong>
+                <span className="stars">
+                  ★★★★★
                 </span>
-
-                <h1>
-                  Elegance,
-                  <br />
-                  <em>reimagined.</em>
-                </h1>
-
-                <p>
-                  Discover graceful sarees and
-                  beautiful kidswear designed for
-                  moments worth remembering.
-                </p>
-
-                <div className="hero-buttons">
-
-                  <button
-                    className="button dark"
-                    onClick={() =>
-                      scrollTo("shop")
-                    }
-                  >
-                    Shop Now →
-                  </button>
-
-                  <button
-                    className="button light"
-                    onClick={() =>
-                      scrollTo("collections")
-                    }
-                  >
-                    Explore Collection
-                  </button>
-
-                </div>
-
-              </div>
-
-              <div className="hero-image">
-                <img
-                  src="/image/hero-saree.jpg"
-                  alt="Kia Fashion saree collection"
-                />
-              </div>
-
-            </section>
-
-            {/* BENEFITS */}
-
-            <section className="highlights">
-
-              <div>
-                <b>01</b>
                 <span>
-                  Curated
-                  <br />
-                  Collections
+                  ({preview.reviews} reviews)
                 </span>
               </div>
 
-              <div>
-                <b>02</b>
-                <span>
-                  Made for
-                  <br />
-                  Every Occasion
-                </span>
-              </div>
-
-              <div>
-                <b>03</b>
-                <span>
-                  Easy
-                  <br />
-                  Shopping
-                </span>
-              </div>
-
-              <div>
-                <b>04</b>
-                <span>
-                  Free Shipping
-                  <br />
-                  over ₹2,500
-                </span>
-              </div>
-
-            </section>
-
-            {/* COLLECTIONS */}
-
-            <section
-              id="collections"
-              className="section"
-            >
-
-              <div className="section-top">
-
-                <div>
-
-                  <span className="kicker">
-                    CURATED FOR YOU
-                  </span>
-
-                  <h2>
-                    Shop by{" "}
-                    <em>collection</em>
-                  </h2>
-
-                </div>
-
-                <button
-                  onClick={() =>
-                    scrollTo("shop")
-                  }
-                >
-                  View all products →
-                </button>
-
-              </div>
-
-              <div className="featured-collection">
-
-                <div className="collection-copy">
-
-                  <span>
-                    01 / WOMEN
-                  </span>
-
-                  <h3>
-                    The Saree Edit
-                  </h3>
-
-                  <div className="line" />
-
-                  <p>
-                    Silk, Banarasi, designer
-                    and more.
-                  </p>
-
-                  <button
-                    onClick={() =>
-                      scrollTo("shop")
-                    }
-                  >
-                    Explore Sarees →
-                  </button>
-
-                </div>
-
-                <div className="collection-images">
-
-                  {sarees.map((product) => (
-                    <button
-                      key={product.id}
-                      onClick={() =>
-                        openProduct(product)
-                      }
-                    >
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                      />
-                    </button>
-                  ))}
-
-                </div>
-
-              </div>
-            </section>
-
-            {/* FESTIVE */}
-
-            <section className="split-banner">
-
-              <div className="split-image">
-                <img
-                  src="/image/festive-collection.jpg"
-                  alt="Festive collection"
-                />
-              </div>
-
-              <div className="split-copy">
-
-                <span className="kicker">
-                  THE FESTIVE EDIT
-                </span>
-
-                <h2>
-                  For celebrations
-                  <br />
-                  <em>
-                    that stay with you.
-                  </em>
-                </h2>
-
-                <p>
-                  Rich colours, graceful drapes
-                  and details designed for your
-                  most memorable occasions.
-                </p>
-
-                <button
-                  className="button dark"
-                  onClick={() =>
-                    scrollTo("shop")
-                  }
-                >
-                  Explore Festive →
-                </button>
-
-              </div>
-
-            </section>
-
-            {/* SAREES */}
-
-            <section
-              id="shop"
-              className="section shop"
-            >
-
-              <div className="section-top">
-
-                <div>
-
-                  <span className="kicker">
-                    THE COLLECTION
-                  </span>
-
-                  <h2>
-                    Signature{" "}
-                    <em>styles</em>
-                  </h2>
-
-                </div>
-
-                <p>
-                  Thoughtfully selected pieces
-                  from the Kia Fashion wardrobe.
-                </p>
-
-              </div>
-
-              <div className="product-grid">
-
-                {sarees.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                  />
-                ))}
-
-              </div>
-
-            </section>
-
-            {/* KIDS */}
-
-            <section className="kids-banner">
-
-              <div className="kids-copy">
-
-                <span className="kicker">
-                  FOR KI & KIDDOS
-                </span>
-
-                <h2>
-                  Little style,
-                  <br />
-                  <em>
-                    big moments.
-                  </em>
-                </h2>
-
-                <p>
-                  Playful silhouettes and
-                  comfortable festive looks made
-                  for little personalities.
-                </p>
-
-                <button
-                  className="button light"
-                  onClick={() =>
-                    scrollTo("kids")
-                  }
-                >
-                  Explore Kidswear →
-                </button>
-
-              </div>
-
-              <div className="kids-image">
-                <img
-                  src="/image/hero-kids.jpg"
-                  alt="Kia Fashion kidswear"
-                />
-              </div>
-
-            </section>
-
-            <section
-              id="kids"
-              className="section"
-            >
-
-              <div className="section-top">
-
-                <div>
-
-                  <span className="kicker">
-                    LITTLE STYLE
-                  </span>
-
-                  <h2>
-                    Made for{" "}
-                    <em>
-                      little moments
-                    </em>
-                  </h2>
-
-                </div>
-
-              </div>
-
-              <div className="product-grid">
-
-                {kids.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                  />
-                ))}
-
-              </div>
-
-            </section>
-
-            {/* STYLE STUDIO */}
-
-            <section className="style-studio">
-
-              <div className="studio-heading">
-
-                <span className="kicker">
-                  KIA STYLE STUDIO
-                </span>
-
-                <h2>
-                  Dress for
-                  <br />
-                  <em>
-                    the moment.
-                  </em>
-                </h2>
-
-              </div>
-
-              <div className="studio-cards">
-
-                {[
-                  [
-                    "wedding-edit.jpg",
-                    "Wedding",
-                  ],
-                  [
-                    "festive-collection.jpg",
-                    "Festival",
-                  ],
-                  [
-                    "everyday-edit.jpg",
-                    "Everyday",
-                  ],
-                ].map((item) => (
-                  <button
-                    key={item[1]}
-                    onClick={() =>
-                      scrollTo("shop")
-                    }
-                  >
-                    <img
-                      src={`/image/${item[0]}`}
-                      alt={item[1]}
-                    />
-
-                    <span>
-                      {item[1]}
-                    </span>
-                  </button>
-                ))}
-
-              </div>
-
-            </section>
-
-            {/* ABOUT */}
-
-            <section
-              id="about"
-              className="about"
-            >
-
-              <div className="about-image">
-
-                <img
-                  src="/image/about-kia-fashion.jpg"
-                  alt="About Kia Fashion"
-                />
-
-              </div>
-
-              <div className="about-copy">
-
-                <span className="kicker">
-                  OUR STORY
-                </span>
-
-                <h2>
-                  Fashion for{" "}
-                  <em>
-                    Ki & Kiddos.
-                  </em>
-                </h2>
-
-                <p>
-                  Kia Fashion brings elegant
-                  Indian fashion and joyful
-                  kidswear together in a warm,
-                  modern shopping experience.
-                </p>
-
-                <p>
-                  We believe beautiful fashion
-                  should feel effortless, personal
-                  and memorable.
-                </p>
-
-                <button
-                  className="button dark"
-                  onClick={() =>
-                    scrollTo("contact")
-                  }
-                >
-                  Discover Kia Fashion →
-                </button>
-
-              </div>
-
-            </section>
-
-            {/* NEWSLETTER */}
-
-            <section className="newsletter">
-
-              <span className="kicker">
-                JOIN THE KIA COMMUNITY
-              </span>
-
-              <h2>
-                Something beautiful
-                <br />
-                <em>
-                  is always coming.
-                </em>
-              </h2>
+              <h3>
+                ₹{preview.price.toLocaleString()}
+              </h3>
 
               <p>
-                Sign up for new collections,
-                styling inspiration and special
-                offers.
+                FREE Delivery · Cash on Delivery
+                available.
               </p>
 
-              <div className="newsletter-form">
+              <button
+                className="add-cart-btn"
+                onClick={() => {
+                  addToCart(preview);
+                  setPreview(null);
+                  setCartOpen(true);
+                }}
+              >
+                Add to Cart
+              </button>
 
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                />
+            </div>
 
-                <button
-                  onClick={() =>
-                    alert(
-                      "Thank you for joining Kia Fashion!"
-                    )
-                  }
-                >
-                  Subscribe →
-                </button>
-
-              </div>
-
-            </section>
-
-          </main>
-        )}
-
-      {/* FOOTER */}
-
-      <footer
-        id="contact"
-        className="footer"
-      >
-
-        <div className="footer-brand">
-
-          <span>
-            KIA FASHION
-          </span>
-
-          <p>
-            Fashion for Ki & Kiddos.
-          </p>
+          </div>
 
         </div>
-
-        <div>
-
-          <h4>Shop</h4>
-
-          <button
-            onClick={() =>
-              scrollTo("shop")
-            }
-          >
-            Sarees
-          </button>
-
-          <button
-            onClick={() =>
-              scrollTo("kids")
-            }
-          >
-            Kidswear
-          </button>
-
-          <button
-            onClick={() =>
-              scrollTo("collections")
-            }
-          >
-            Collections
-          </button>
-
-        </div>
-
-        <div>
-
-          <h4>Explore</h4>
-
-          <button
-            onClick={() =>
-              scrollTo("about")
-            }
-          >
-            Our Story
-          </button>
-
-          <button
-            onClick={() =>
-              scrollTo("shop")
-            }
-          >
-            New Arrivals
-          </button>
-
-          <button
-            onClick={() =>
-              alert(
-                "Contact: hello@kiafashion.in"
-              )
-            }
-          >
-            Contact
-          </button>
-
-        </div>
-
-        <div>
-
-          <h4>
-            Customer Care
-          </h4>
-
-          <p>
-            Mon–Sat, 10 AM–6 PM
-          </p>
-
-          <p>
-            Easy returns · COD available
-          </p>
-
-          <p>
-            Free shipping over ₹2,500
-          </p>
-
-        </div>
-
-      </footer>
-
-      <div className="copyright">
-        © {new Date().getFullYear()} Kia Fashion.
-        All rights reserved.
-      </div>
+      )}
 
     </div>
   );
