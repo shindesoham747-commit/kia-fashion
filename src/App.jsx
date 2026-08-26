@@ -17,7 +17,7 @@ const kids = [
 
 export default function App() {
   const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [wishlist, setWishlist] = useState(0);
   const [menu, setMenu] = useState(false);
   const [preview, setPreview] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -39,10 +39,7 @@ export default function App() {
       if (existing) {
         return currentCart.map((product) =>
           product.name === item[0]
-            ? {
-                ...product,
-                quantity: product.quantity + 1
-              }
+            ? { ...product, quantity: product.quantity + 1 }
             : product
         );
       }
@@ -62,23 +59,13 @@ export default function App() {
     setCartOpen(true);
   };
 
-  // REMOVE PRODUCT
-  const removeFromCart = (name) => {
-    setCart((currentCart) =>
-      currentCart.filter((product) => product.name !== name)
-    );
-  };
-
   // INCREASE QUANTITY
   const increaseQuantity = (name) => {
     setCart((currentCart) =>
-      currentCart.map((product) =>
-        product.name === name
-          ? {
-              ...product,
-              quantity: product.quantity + 1
-            }
-          : product
+      currentCart.map((item) =>
+        item.name === name
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       )
     );
   };
@@ -87,57 +74,48 @@ export default function App() {
   const decreaseQuantity = (name) => {
     setCart((currentCart) =>
       currentCart
-        .map((product) =>
-          product.name === name
-            ? {
-                ...product,
-                quantity: product.quantity - 1
-              }
-            : product
+        .map((item) =>
+          item.name === name
+            ? { ...item, quantity: item.quantity - 1 }
+            : item
         )
-        .filter((product) => product.quantity > 0)
+        .filter((item) => item.quantity > 0)
     );
   };
 
-  // WISHLIST
-  const toggleWishlist = (item) => {
-    setWishlist((currentWishlist) => {
-      if (currentWishlist.includes(item[0])) {
-        return currentWishlist.filter((name) => name !== item[0]);
-      }
-
-      return [...currentWishlist, item[0]];
-    });
+  // REMOVE PRODUCT
+  const removeFromCart = (name) => {
+    setCart((currentCart) =>
+      currentCart.filter((item) => item.name !== name)
+    );
   };
 
   // TOTAL ITEMS
-  const cartCount = cart.reduce(
-    (total, product) => total + product.quantity,
+  const totalItems = cart.reduce(
+    (total, item) => total + item.quantity,
     0
   );
 
   // TOTAL PRICE
-  const cartTotal = cart.reduce((total, product) => {
-    const numericPrice = Number(
-      product.price.replace("₹", "").replace(",", "")
-    );
-
-    return total + numericPrice * product.quantity;
+  const totalPrice = cart.reduce((total, item) => {
+    const price = Number(item.price.replace(/[₹,]/g, ""));
+    return total + price * item.quantity;
   }, 0);
 
-  // PRODUCT CARD
+  const formatPrice = (price) => {
+    return `₹${price.toLocaleString("en-IN")}`;
+  };
+
   const Card = ({ item, type }) => (
     <article className="product">
       <div className="product-image">
         <img src={item[2]} alt={item[0]} />
 
         <button
-          className={`heart ${
-            wishlist.includes(item[0]) ? "liked" : ""
-          }`}
-          onClick={() => toggleWishlist(item)}
+          className="heart"
+          onClick={() => setWishlist((value) => value + 1)}
         >
-          {wishlist.includes(item[0]) ? "♥" : "♡"}
+          ♡
         </button>
 
         <button
@@ -200,26 +178,23 @@ export default function App() {
             ["Style Studio", "style-studio"],
             ["About", "about"],
             ["Contact", "contact"]
-          ].map(([x, id]) => (
+          ].map(([name, id]) => (
             <button
               key={id}
               onClick={() => scrollTo(id)}
             >
-              {x}
+              {name}
             </button>
           ))}
         </nav>
 
-        {/* HEADER ACTIONS */}
         <div className="header-actions">
 
           <button
-            onClick={() => {
-              scrollTo("shop");
-            }}
+            onClick={() => setWishlist((value) => value + 1)}
           >
             ♡
-            <sup>{wishlist.length}</sup>
+            <sup>{wishlist}</sup>
           </button>
 
           <button
@@ -228,7 +203,7 @@ export default function App() {
           >
             🛒
             <span>Cart</span>
-            <sup>{cartCount}</sup>
+            <sup>{totalItems}</sup>
           </button>
 
         </div>
@@ -307,13 +282,13 @@ export default function App() {
             ["02", "Made for", "Every Occasion"],
             ["03", "Thoughtful Shopping", "Experience"],
             ["04", "Free Shipping", "over ₹2,500"]
-          ].map((x) => (
-            <div key={x[0]}>
-              <b>{x[0]}</b>
+          ].map((item) => (
+            <div key={item[0]}>
+              <b>{item[0]}</b>
               <span>
-                {x[1]}
+                {item[1]}
                 <br />
-                {x[2]}
+                {item[2]}
               </span>
             </div>
           ))}
@@ -363,15 +338,12 @@ export default function App() {
 
             <div className="collection-images">
 
-              {sarees.map((x) => (
+              {sarees.map((item) => (
                 <button
-                  key={x[0]}
-                  onClick={() => setPreview(x[2])}
+                  key={item[0]}
+                  onClick={() => setPreview(item[2])}
                 >
-                  <img
-                    src={x[2]}
-                    alt={x[0]}
-                  />
+                  <img src={item[2]} alt={item[0]} />
                 </button>
               ))}
 
@@ -381,7 +353,7 @@ export default function App() {
 
         </section>
 
-        {/* FESTIVE BANNER */}
+        {/* FESTIVE */}
         <section className="split-banner">
 
           <div className="split-image">
@@ -404,8 +376,8 @@ export default function App() {
             </h2>
 
             <p>
-              Rich colours, graceful drapes and details
-              designed for your most memorable occasions.
+              Rich colours, graceful drapes and details designed
+              for your most memorable occasions.
             </p>
 
             <button
@@ -435,18 +407,18 @@ export default function App() {
             </div>
 
             <p>
-              Thoughtfully selected pieces from the Kia
-              Fashion wardrobe.
+              Thoughtfully selected pieces from the Kia Fashion
+              wardrobe.
             </p>
 
           </div>
 
           <div className="product-grid">
 
-            {sarees.map((x) => (
+            {sarees.map((item) => (
               <Card
-                key={x[0]}
-                item={x}
+                key={item[0]}
+                item={item}
                 type="WOMEN / SAREES"
               />
             ))}
@@ -471,8 +443,8 @@ export default function App() {
             </h2>
 
             <p>
-              Playful silhouettes and comfortable festive
-              looks made for little personalities.
+              Playful silhouettes and comfortable festive looks
+              made for little personalities.
             </p>
 
             <button
@@ -514,10 +486,10 @@ export default function App() {
 
           <div className="product-grid">
 
-            {kids.map((x) => (
+            {kids.map((item) => (
               <Card
-                key={x[0]}
-                item={x}
+                key={item[0]}
+                item={item}
                 type="KIDSWEAR"
               />
             ))}
@@ -527,10 +499,7 @@ export default function App() {
         </section>
 
         {/* STYLE STUDIO */}
-        <section
-          id="style-studio"
-          className="style-studio"
-        >
+        <section id="style-studio" className="style-studio">
 
           <div className="studio-heading">
 
@@ -552,20 +521,18 @@ export default function App() {
               ["wedding-edit.jpg", "Wedding"],
               ["festive-collection.jpg", "Festival"],
               ["everyday-edit.jpg", "Everyday"]
-            ].map((x) => (
-
+            ].map((item) => (
               <button
-                key={x[1]}
+                key={item[1]}
                 onClick={() => scrollTo("shop")}
               >
                 <img
-                  src={`/image/${x[0]}`}
-                  alt={x[1]}
+                  src={`/image/${item[0]}`}
+                  alt={item[1]}
                 />
 
-                <span>{x[1]}</span>
+                <span>{item[1]}</span>
               </button>
-
             ))}
 
           </div>
@@ -601,9 +568,9 @@ export default function App() {
             </p>
 
             <p>
-              We believe beautiful fashion should feel
-              effortless, personal and memorable — whether
-              it is a wedding, festival or everyday moment.
+              We believe beautiful fashion should feel effortless,
+              personal and memorable — whether it is a wedding,
+              festival or everyday moment.
             </p>
 
             <button
@@ -728,7 +695,7 @@ export default function App() {
         All rights reserved.
       </div>
 
-      {/* QUICK VIEW MODAL */}
+      {/* IMAGE MODAL */}
       {preview && (
         <div
           className="image-modal"
@@ -744,7 +711,7 @@ export default function App() {
           <img
             src={preview}
             alt="Kia Fashion preview"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           />
 
         </div>
@@ -756,22 +723,22 @@ export default function App() {
           className="cart-overlay"
           onClick={() => setCartOpen(false)}
         >
-
+          
           {/* CART DRAWER */}
           <aside
             className="cart-drawer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
 
             <div className="cart-header">
 
               <div>
                 <span className="kicker">
-                  YOUR SHOPPING BAG
+                  YOUR SELECTION
                 </span>
 
                 <h2>
-                  Your <em>Cart</em>
+                  Shopping <em>Bag</em>
                 </h2>
               </div>
 
@@ -784,17 +751,15 @@ export default function App() {
 
             </div>
 
+            {/* EMPTY CART */}
             {cart.length === 0 ? (
-
               <div className="empty-cart">
 
                 <div className="empty-cart-icon">
-                  🛍
+                  🛍️
                 </div>
 
-                <h3>
-                  Your bag is empty
-                </h3>
+                <h3>Your bag is empty</h3>
 
                 <p>
                   Discover something beautiful from
@@ -808,42 +773,35 @@ export default function App() {
                     scrollTo("shop");
                   }}
                 >
-                  Continue Shopping →
+                  Explore Collection →
                 </button>
 
               </div>
-
             ) : (
 
               <>
-
+                {/* CART PRODUCTS */}
                 <div className="cart-items">
 
-                  {cart.map((product) => (
+                  {cart.map((item) => (
 
                     <div
                       className="cart-item"
-                      key={product.name}
+                      key={item.name}
                     >
 
                       <img
-                        src={product.image}
-                        alt={product.name}
+                        src={item.image}
+                        alt={item.name}
                       />
 
-                      <div className="cart-item-details">
+                      <div className="cart-item-info">
 
-                        <span>
-                          {product.type}
-                        </span>
+                        <span>{item.type}</span>
 
-                        <h3>
-                          {product.name}
-                        </h3>
+                        <h3>{item.name}</h3>
 
-                        <strong>
-                          {product.price}
-                        </strong>
+                        <strong>{item.price}</strong>
 
                         <div className="quantity-row">
 
@@ -851,23 +809,19 @@ export default function App() {
 
                             <button
                               onClick={() =>
-                                decreaseQuantity(
-                                  product.name
-                                )
+                                decreaseQuantity(item.name)
                               }
                             >
                               −
                             </button>
 
                             <span>
-                              {product.quantity}
+                              {item.quantity}
                             </span>
 
                             <button
                               onClick={() =>
-                                increaseQuantity(
-                                  product.name
-                                )
+                                increaseQuantity(item.name)
                               }
                             >
                               +
@@ -878,9 +832,7 @@ export default function App() {
                           <button
                             className="remove"
                             onClick={() =>
-                              removeFromCart(
-                                product.name
-                              )
+                              removeFromCart(item.name)
                             }
                           >
                             Remove
@@ -896,49 +848,57 @@ export default function App() {
 
                 </div>
 
-                <div className="cart-footer">
+                {/* CART SUMMARY */}
+                <div className="cart-summary">
 
-                  <div className="cart-total">
-
-                    <span>
-                      Subtotal
-                    </span>
-
+                  <div className="summary-row">
+                    <span>Subtotal</span>
                     <strong>
-                      ₹{cartTotal.toLocaleString("en-IN")}
+                      {formatPrice(totalPrice)}
                     </strong>
-
                   </div>
 
-                  <p className="shipping-note">
-                    Shipping calculated at checkout.
-                  </p>
+                  <div className="summary-row">
+                    <span>Shipping</span>
+                    <strong>
+                      {totalPrice >= 2500
+                        ? "FREE"
+                        : "₹99"}
+                    </strong>
+                  </div>
+
+                  <div className="summary-line" />
+
+                  <div className="summary-row total">
+                    <span>Total</span>
+
+                    <strong>
+                      {formatPrice(
+                        totalPrice >= 2500
+                          ? totalPrice
+                          : totalPrice + 99
+                      )}
+                    </strong>
+                  </div>
 
                   <button
                     className="checkout-button"
                     onClick={() =>
                       alert(
-                        "Checkout coming soon! Your cart is ready."
+                        "Thank you for shopping with Kia Fashion! Checkout will be available soon."
                       )
                     }
                   >
                     Proceed to Checkout →
                   </button>
 
-                  <button
-                    className="continue-shopping"
-                    onClick={() => {
-                      setCartOpen(false);
-                      scrollTo("shop");
-                    }}
-                  >
-                    Continue Shopping
-                  </button>
+                  <p className="cart-note">
+                    🔒 Secure shopping · COD available
+                  </p>
 
                 </div>
 
               </>
-
             )}
 
           </aside>
