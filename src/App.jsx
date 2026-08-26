@@ -17,7 +17,7 @@ const kids = [
 
 export default function App() {
   const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState(0);
+  const [wishlist, setWishlist] = useState([]);
   const [menu, setMenu] = useState(false);
   const [preview, setPreview] = useState(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -32,18 +32,18 @@ export default function App() {
   // ADD PRODUCT TO CART
   const addToCart = (item, type) => {
     setCart((currentCart) => {
-      const existingItem = currentCart.find(
-        (cartItem) => cartItem.name === item[0]
+      const existing = currentCart.find(
+        (product) => product.name === item[0]
       );
 
-      if (existingItem) {
-        return currentCart.map((cartItem) =>
-          cartItem.name === item[0]
+      if (existing) {
+        return currentCart.map((product) =>
+          product.name === item[0]
             ? {
-                ...cartItem,
-                quantity: cartItem.quantity + 1
+                ...product,
+                quantity: product.quantity + 1
               }
-            : cartItem
+            : product
         );
       }
 
@@ -62,16 +62,23 @@ export default function App() {
     setCartOpen(true);
   };
 
+  // REMOVE PRODUCT
+  const removeFromCart = (name) => {
+    setCart((currentCart) =>
+      currentCart.filter((product) => product.name !== name)
+    );
+  };
+
   // INCREASE QUANTITY
   const increaseQuantity = (name) => {
     setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.name === name
+      currentCart.map((product) =>
+        product.name === name
           ? {
-              ...item,
-              quantity: item.quantity + 1
+              ...product,
+              quantity: product.quantity + 1
             }
-          : item
+          : product
       )
     );
   };
@@ -80,47 +87,57 @@ export default function App() {
   const decreaseQuantity = (name) => {
     setCart((currentCart) =>
       currentCart
-        .map((item) =>
-          item.name === name
+        .map((product) =>
+          product.name === name
             ? {
-                ...item,
-                quantity: item.quantity - 1
+                ...product,
+                quantity: product.quantity - 1
               }
-            : item
+            : product
         )
-        .filter((item) => item.quantity > 0)
+        .filter((product) => product.quantity > 0)
     );
   };
 
-  // REMOVE ITEM
-  const removeFromCart = (name) => {
-    setCart((currentCart) =>
-      currentCart.filter((item) => item.name !== name)
-    );
+  // WISHLIST
+  const toggleWishlist = (item) => {
+    setWishlist((currentWishlist) => {
+      if (currentWishlist.includes(item[0])) {
+        return currentWishlist.filter((name) => name !== item[0]);
+      }
+
+      return [...currentWishlist, item[0]];
+    });
   };
 
   // TOTAL ITEMS
   const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
+    (total, product) => total + product.quantity,
     0
   );
 
   // TOTAL PRICE
-  const cartTotal = cart.reduce((total, item) => {
-    const price = Number(item.price.replace(/[₹,]/g, ""));
-    return total + price * item.quantity;
+  const cartTotal = cart.reduce((total, product) => {
+    const numericPrice = Number(
+      product.price.replace("₹", "").replace(",", "")
+    );
+
+    return total + numericPrice * product.quantity;
   }, 0);
 
+  // PRODUCT CARD
   const Card = ({ item, type }) => (
     <article className="product">
       <div className="product-image">
         <img src={item[2]} alt={item[0]} />
 
         <button
-          className="heart"
-          onClick={() => setWishlist((v) => v + 1)}
+          className={`heart ${
+            wishlist.includes(item[0]) ? "liked" : ""
+          }`}
+          onClick={() => toggleWishlist(item)}
         >
-          ♡
+          {wishlist.includes(item[0]) ? "♥" : "♡"}
         </button>
 
         <button
@@ -197,10 +214,12 @@ export default function App() {
         <div className="header-actions">
 
           <button
-            onClick={() => setWishlist((v) => v + 1)}
+            onClick={() => {
+              scrollTo("shop");
+            }}
           >
             ♡
-            <sup>{wishlist}</sup>
+            <sup>{wishlist.length}</sup>
           </button>
 
           <button
@@ -362,16 +381,14 @@ export default function App() {
 
         </section>
 
-        {/* FESTIVE */}
+        {/* FESTIVE BANNER */}
         <section className="split-banner">
 
           <div className="split-image">
-
             <img
               src="/image/festive-collection.jpg"
               alt="Festive collection"
             />
-
           </div>
 
           <div className="split-copy">
@@ -408,7 +425,6 @@ export default function App() {
           <div className="section-top">
 
             <div>
-
               <span className="kicker">
                 THE COLLECTION
               </span>
@@ -416,7 +432,6 @@ export default function App() {
               <h2>
                 Signature <em>styles</em>
               </h2>
-
             </div>
 
             <p>
@@ -486,7 +501,6 @@ export default function App() {
           <div className="section-top">
 
             <div>
-
               <span className="kicker">
                 LITTLE STYLE
               </span>
@@ -494,7 +508,6 @@ export default function App() {
               <h2>
                 Made for <em>little moments</em>
               </h2>
-
             </div>
 
           </div>
@@ -545,14 +558,12 @@ export default function App() {
                 key={x[1]}
                 onClick={() => scrollTo("shop")}
               >
-
                 <img
                   src={`/image/${x[0]}`}
                   alt={x[1]}
                 />
 
                 <span>{x[1]}</span>
-
               </button>
 
             ))}
@@ -584,9 +595,9 @@ export default function App() {
             </h2>
 
             <p>
-              Kia Fashion brings elegant Indian fashion
-              and joyful kidswear together in a warm,
-              modern shopping experience.
+              Kia Fashion brings elegant Indian fashion and
+              joyful kidswear together in a warm, modern
+              shopping experience.
             </p>
 
             <p>
@@ -633,9 +644,7 @@ export default function App() {
 
             <button
               onClick={() =>
-                alert(
-                  "Thank you for joining Kia Fashion!"
-                )
+                alert("Thank you for joining Kia Fashion!")
               }
             >
               Subscribe →
@@ -648,10 +657,7 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer
-        id="contact"
-        className="footer"
-      >
+      <footer id="contact" className="footer">
 
         <div className="footer-brand">
 
@@ -708,7 +714,9 @@ export default function App() {
           <h4>Customer Care</h4>
 
           <p>Mon–Sat, 10 AM–6 PM</p>
+
           <p>Easy returns · COD available</p>
+
           <p>Free shipping over ₹2,500</p>
 
         </div>
@@ -720,9 +728,8 @@ export default function App() {
         All rights reserved.
       </div>
 
-      {/* IMAGE PREVIEW */}
+      {/* QUICK VIEW MODAL */}
       {preview && (
-
         <div
           className="image-modal"
           onClick={() => setPreview(null)}
@@ -737,21 +744,21 @@ export default function App() {
           <img
             src={preview}
             alt="Kia Fashion preview"
+            onClick={(e) => e.stopPropagation()}
           />
 
         </div>
-
       )}
 
-      {/* CART DRAWER */}
+      {/* CART OVERLAY */}
       {cartOpen && (
-
         <div
           className="cart-overlay"
           onClick={() => setCartOpen(false)}
         >
 
-          <div
+          {/* CART DRAWER */}
+          <aside
             className="cart-drawer"
             onClick={(e) => e.stopPropagation()}
           >
@@ -759,15 +766,13 @@ export default function App() {
             <div className="cart-header">
 
               <div>
-
                 <span className="kicker">
-                  KIA FASHION
+                  YOUR SHOPPING BAG
                 </span>
 
                 <h2>
                   Your <em>Cart</em>
                 </h2>
-
               </div>
 
               <button
@@ -784,14 +789,16 @@ export default function App() {
               <div className="empty-cart">
 
                 <div className="empty-cart-icon">
-                  🛒
+                  🛍
                 </div>
 
-                <h3>Your cart is empty</h3>
+                <h3>
+                  Your bag is empty
+                </h3>
 
                 <p>
-                  Discover something beautiful and
-                  add it to your bag.
+                  Discover something beautiful from
+                  the Kia Fashion collection.
                 </p>
 
                 <button
@@ -801,7 +808,7 @@ export default function App() {
                     scrollTo("shop");
                   }}
                 >
-                  Explore Sarees →
+                  Continue Shopping →
                 </button>
 
               </div>
@@ -812,66 +819,76 @@ export default function App() {
 
                 <div className="cart-items">
 
-                  {cart.map((item) => (
+                  {cart.map((product) => (
 
                     <div
                       className="cart-item"
-                      key={item.name}
+                      key={product.name}
                     >
 
                       <img
-                        src={item.image}
-                        alt={item.name}
+                        src={product.image}
+                        alt={product.name}
                       />
 
-                      <div className="cart-item-info">
+                      <div className="cart-item-details">
 
                         <span>
-                          {item.type}
+                          {product.type}
                         </span>
 
                         <h3>
-                          {item.name}
+                          {product.name}
                         </h3>
 
                         <strong>
-                          {item.price}
+                          {product.price}
                         </strong>
 
-                        <div className="quantity">
+                        <div className="quantity-row">
+
+                          <div className="quantity">
+
+                            <button
+                              onClick={() =>
+                                decreaseQuantity(
+                                  product.name
+                                )
+                              }
+                            >
+                              −
+                            </button>
+
+                            <span>
+                              {product.quantity}
+                            </span>
+
+                            <button
+                              onClick={() =>
+                                increaseQuantity(
+                                  product.name
+                                )
+                              }
+                            >
+                              +
+                            </button>
+
+                          </div>
 
                           <button
+                            className="remove"
                             onClick={() =>
-                              decreaseQuantity(item.name)
+                              removeFromCart(
+                                product.name
+                              )
                             }
                           >
-                            −
-                          </button>
-
-                          <span>
-                            {item.quantity}
-                          </span>
-
-                          <button
-                            onClick={() =>
-                              increaseQuantity(item.name)
-                            }
-                          >
-                            +
+                            Remove
                           </button>
 
                         </div>
 
                       </div>
-
-                      <button
-                        className="remove-item"
-                        onClick={() =>
-                          removeFromCart(item.name)
-                        }
-                      >
-                        ×
-                      </button>
 
                     </div>
 
@@ -879,12 +896,12 @@ export default function App() {
 
                 </div>
 
-                <div className="cart-bottom">
+                <div className="cart-footer">
 
                   <div className="cart-total">
 
                     <span>
-                      Total
+                      Subtotal
                     </span>
 
                     <strong>
@@ -893,20 +910,30 @@ export default function App() {
 
                   </div>
 
+                  <p className="shipping-note">
+                    Shipping calculated at checkout.
+                  </p>
+
                   <button
-                    className="button dark checkout-button"
+                    className="checkout-button"
                     onClick={() =>
                       alert(
-                        "Checkout coming soon! Thank you for shopping with Kia Fashion."
+                        "Checkout coming soon! Your cart is ready."
                       )
                     }
                   >
                     Proceed to Checkout →
                   </button>
 
-                  <p className="cart-note">
-                    Free shipping on orders over ₹2,500
-                  </p>
+                  <button
+                    className="continue-shopping"
+                    onClick={() => {
+                      setCartOpen(false);
+                      scrollTo("shop");
+                    }}
+                  >
+                    Continue Shopping
+                  </button>
 
                 </div>
 
@@ -914,10 +941,9 @@ export default function App() {
 
             )}
 
-          </div>
+          </aside>
 
         </div>
-
       )}
 
     </div>
