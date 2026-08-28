@@ -257,6 +257,7 @@ const [wishlist, setWishlist] = useState([]);
 const [search, setSearch] = useState("");
 const [category, setCategory] = useState("All");
 const [sort, setSort] = useState("featured");
+
 const [cartOpen, setCartOpen] = useState(false);
 const [menuOpen, setMenuOpen] = useState(false);
 const [preview, setPreview] = useState(null);
@@ -270,43 +271,63 @@ const existing = current.find((item) => item.id === product.id);
   if (existing) {
     return current.map((item) =>
       item.id === product.id
-        ? { ...item, quantity: item.quantity + 1 }
+        ? {
+            ...item,
+            quantity: item.quantity + 1,
+          }
         : item
     );
   }
 
-  return [...current, { ...product, quantity: 1 }];
+  return [
+    ...current,
+    {
+      ...product,
+      quantity: 1,
+    },
+  ];
 });
 ```
 
 };
 
 const removeFromCart = (id) => {
-setCart((current) => current.filter((item) => item.id !== id));
+setCart((current) =>
+current.filter((item) => item.id !== id)
+);
 };
 
 const updateQuantity = (id, amount) => {
 setCart((current) =>
 current
-.map((item) =>
-item.id === id
-? {
-...item,
-quantity: Math.max(1, item.quantity + amount),
+.map((item) => {
+if (item.id !== id) {
+return item;
 }
-: item
-)
-.filter((item) => item.quantity > 0)
+
+```
+      return {
+        ...item,
+        quantity: Math.max(1, item.quantity + amount),
+      };
+    })
+    .filter((item) => item.quantity > 0)
 );
+```
+
 };
 
 const toggleWishlist = (product) => {
 setWishlist((current) => {
-const exists = current.some((item) => item.id === product.id);
+const exists = current.some(
+(item) => item.id === product.id
+);
 
 ```
   if (exists) {
-    return current.filter((item) => item.id !== product.id);
+    return current.filter(
+      (item) => item.id !== product.id
+    );
   }
 
   return [...current, product];
@@ -316,15 +337,24 @@ const exists = current.some((item) => item.id === product.id);
 };
 
 const scrollTo = (id) => {
-document.getElementById(id)?.scrollIntoView({
-behavior: "smooth",
-block: "start",
-});
+const element = document.getElementById(id);
 
 ```
+if (element) {
+  element.scrollIntoView({
+    behavior: "smooth",
+    block: "start",
+  });
+}
+
 setMenuOpen(false);
 ```
 
+};
+
+const shopCategory = (value) => {
+setCategory(value);
+scrollTo("shop");
 };
 
 const cartCount = cart.reduce(
@@ -333,7 +363,8 @@ const cartCount = cart.reduce(
 );
 
 const cartTotal = cart.reduce(
-(total, item) => total + item.price * item.quantity,
+(total, item) =>
+total + item.price * item.quantity,
 0
 );
 
@@ -341,44 +372,50 @@ const filteredProducts = useMemo(() => {
 const query = search.trim().toLowerCase();
 
 ```
-const result = products.filter((product) => {
+const filtered = products.filter((product) => {
   const matchesSearch =
     !query ||
     product.name.toLowerCase().includes(query) ||
     product.category.toLowerCase().includes(query);
 
   const matchesCategory =
-    category === "All" || product.category === category;
+    category === "All" ||
+    product.category === category;
 
   return matchesSearch && matchesCategory;
 });
 
-if (sort === "low") {
-  result.sort((a, b) => a.price - b.price);
-}
+return [...filtered].sort((a, b) => {
+  if (sort === "low") {
+    return a.price - b.price;
+  }
 
-if (sort === "high") {
-  result.sort((a, b) => b.price - a.price);
-}
+  if (sort === "high") {
+    return b.price - a.price;
+  }
 
-if (sort === "rating") {
-  result.sort((a, b) => b.rating - a.rating);
-}
+  if (sort === "rating") {
+    return b.rating - a.rating;
+  }
 
-return result;
+  return a.id - b.id;
+});
 ```
 
 }, [search, category, sort]);
 
-return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPING OVER ₹2,500</span> <span>•</span> <span>EASY RETURNS</span> <span>•</span> <span>COD AVAILABLE</span> </div>
+return ( <div className="app">
+{/* ANNOUNCEMENT BAR */} <div className="announcement"> <span>FREE SHIPPING OVER ₹2,500</span> <span>•</span> <span>EASY RETURNS</span> <span>•</span> <span>COD AVAILABLE</span> </div>
 
 ```
+  {/* HEADER */}
   <header className="header">
     <button
       type="button"
       className="menu-button"
       onClick={() => setMenuOpen((value) => !value)}
       aria-label="Open menu"
+      aria-expanded={menuOpen}
     >
       ☰
     </button>
@@ -397,10 +434,12 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       <strong>India ▾</strong>
     </div>
 
+    {/* DESKTOP SEARCH */}
     <div className="desktop-search">
       <select
         value={category}
         onChange={(e) => setCategory(e.target.value)}
+        aria-label="Select category"
       >
         {categories.map((item) => (
           <option value={item} key={item}>
@@ -413,9 +452,14 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search Kia Fashion"
+        type="search"
       />
 
-      <button type="button" aria-label="Search">
+      <button
+        type="button"
+        onClick={() => scrollTo("shop")}
+        aria-label="Search"
+      >
         ⌕
       </button>
     </div>
@@ -423,7 +467,9 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     <button
       type="button"
       className="header-link account"
-      onClick={() => alert("Welcome to Kia Fashion")}
+      onClick={() =>
+        alert("Welcome to Kia Fashion")
+      }
     >
       <small>Hello, sign in</small>
       <strong>Account & Lists</strong>
@@ -432,7 +478,9 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     <button
       type="button"
       className="header-link orders"
-      onClick={() => alert("Your orders will appear here.")}
+      onClick={() =>
+        alert("Your orders will appear here.")
+      }
     >
       <small>Returns</small>
       <strong>& Orders</strong>
@@ -442,6 +490,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       type="button"
       className="cart-button"
       onClick={() => setCartOpen(true)}
+      aria-label="Open cart"
     >
       <span>🛒</span>
 
@@ -453,31 +502,45 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     <button
       type="button"
       className="mobile-search-button"
-      onClick={() => setMobileSearch((value) => !value)}
-      aria-label="Open search"
+      onClick={() =>
+        setMobileSearch((value) => !value)
+      }
+      aria-label="Search"
     >
       🔍
     </button>
   </header>
 
+  {/* MOBILE SEARCH */}
   {mobileSearch && (
     <div className="mobile-search">
       <input
         autoFocus
+        type="search"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search sarees, kidswear..."
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            setMobileSearch(false);
+            scrollTo("shop");
+          }
+        }}
       />
 
       <button
         type="button"
-        onClick={() => setMobileSearch(false)}
+        onClick={() => {
+          setMobileSearch(false);
+          scrollTo("shop");
+        }}
       >
         Search
       </button>
     </div>
   )}
 
+  {/* NAVIGATION */}
   <nav className={`nav ${menuOpen ? "show" : ""}`}>
     <button type="button" onClick={() => scrollTo("home")}>
       Home
@@ -490,11 +553,17 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       Collections
     </button>
 
-    <button type="button" onClick={() => scrollTo("shop")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("shop")}
+    >
       Sarees
     </button>
 
-    <button type="button" onClick={() => scrollTo("kids")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("kids")}
+    >
       Kidswear
     </button>
 
@@ -505,24 +574,33 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       Style Studio
     </button>
 
-    <button type="button" onClick={() => scrollTo("about")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("about")}
+    >
       Our Story
     </button>
 
-    <button type="button" onClick={() => scrollTo("contact")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("contact")}
+    >
       Customer Care
     </button>
   </nav>
 
   <main>
+    {/* HERO */}
     <section id="home" className="hero">
       <img
         src="/image/hero-saree.jpg"
-        alt="Kia Fashion collection"
+        alt="Kia Fashion saree collection"
       />
 
       <div className="hero-content">
-        <span className="eyebrow">THE NEW KIA COLLECTION</span>
+        <span className="eyebrow">
+          THE NEW KIA COLLECTION
+        </span>
 
         <h1>
           Elegance,
@@ -531,8 +609,8 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
         </h1>
 
         <p>
-          Graceful sarees and joyful kidswear for moments
-          worth remembering.
+          Graceful sarees and joyful kidswear for
+          moments worth remembering.
         </p>
 
         <button
@@ -544,9 +622,11 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </div>
     </section>
 
+    {/* BENEFITS */}
     <section className="benefits">
       <div>
         <span>🚚</span>
+
         <section>
           <strong>Free Delivery</strong>
           <small>Orders over ₹2,500</small>
@@ -555,6 +635,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
       <div>
         <span>↩</span>
+
         <section>
           <strong>Easy Returns</strong>
           <small>Simple return policy</small>
@@ -563,6 +644,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
       <div>
         <span>🔒</span>
+
         <section>
           <strong>Secure Payments</strong>
           <small>100% secure checkout</small>
@@ -571,6 +653,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
       <div>
         <span>₹</span>
+
         <section>
           <strong>Cash on Delivery</strong>
           <small>Available across India</small>
@@ -578,10 +661,16 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </div>
     </section>
 
-    <section id="collections" className="section">
+    {/* COLLECTIONS */}
+    <section
+      id="collections"
+      className="section"
+    >
       <div className="section-title">
         <div>
-          <span className="eyebrow">CURATED FOR YOU</span>
+          <span className="eyebrow">
+            CURATED FOR YOU
+          </span>
 
           <h2>
             Shop by <em>collection</em>
@@ -602,12 +691,15 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
             type="button"
             className="collection-card"
             key={item.title}
-            onClick={() => {
-              setCategory(item.category);
-              scrollTo("shop");
-            }}
+            onClick={() =>
+              shopCategory(item.category)
+            }
           >
-            <img src={item.image} alt={item.title} />
+            <img
+              src={item.image}
+              alt={item.title}
+              loading="lazy"
+            />
 
             <div>
               <span>{item.text}</span>
@@ -617,12 +709,24 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
           </button>
         ))}
       </div>
+
+      <div className="swipe-hint">
+        <span>←</span>
+        Swipe to explore
+        <span>→</span>
+      </div>
     </section>
 
-    <section id="shop" className="section shop-section">
+    {/* SHOP */}
+    <section
+      id="shop"
+      className="section shop-section"
+    >
       <div className="section-title">
         <div>
-          <span className="eyebrow">KIA FASHION STORE</span>
+          <span className="eyebrow">
+            KIA FASHION STORE
+          </span>
 
           <h2>
             Best Sellers <em>& Deals</em>
@@ -634,12 +738,15 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
         </span>
       </div>
 
+      {/* MOBILE SWIPEABLE CATEGORY BAR */}
       <div className="shop-controls">
         <div className="category-pills">
           {categories.map((item) => (
             <button
               type="button"
-              className={category === item ? "selected" : ""}
+              className={
+                category === item ? "selected" : ""
+              }
               key={item}
               onClick={() => setCategory(item)}
             >
@@ -653,11 +760,28 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
           onChange={(e) => setSort(e.target.value)}
           aria-label="Sort products"
         >
-          <option value="featured">Featured</option>
-          <option value="low">Price: Low to High</option>
-          <option value="high">Price: High to Low</option>
-          <option value="rating">Customer Rating</option>
+          <option value="featured">
+            Featured
+          </option>
+
+          <option value="low">
+            Price: Low to High
+          </option>
+
+          <option value="high">
+            Price: High to Low
+          </option>
+
+          <option value="rating">
+            Customer Rating
+          </option>
         </select>
+      </div>
+
+      <div className="swipe-hint shop-swipe-hint">
+        <span>←</span>
+        Swipe categories
+        <span>→</span>
       </div>
 
       <div className="product-grid">
@@ -675,9 +799,13 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
           ))
         ) : (
           <div className="no-products">
+            <div>⌕</div>
+
             <h3>No products found</h3>
 
-            <p>Try another search or category.</p>
+            <p>
+              Try another search or category.
+            </p>
 
             <button
               type="button"
@@ -693,14 +821,18 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </div>
     </section>
 
+    {/* FESTIVE BANNER */}
     <section className="feature-banner">
       <img
         src="/image/festive-collection.jpg"
         alt="Festive collection"
+        loading="lazy"
       />
 
       <div>
-        <span className="eyebrow">THE FESTIVE EDIT</span>
+        <span className="eyebrow">
+          THE FESTIVE EDIT
+        </span>
 
         <h2>
           For celebrations
@@ -709,23 +841,29 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
         </h2>
 
         <p>
-          Rich colours, graceful drapes and beautiful details
-          for your most memorable occasions.
+          Rich colours, graceful drapes and beautiful
+          details for your most memorable occasions.
         </p>
 
         <button
           type="button"
-          onClick={() => scrollTo("shop")}
+          onClick={() => {
+            setCategory("Festive Saree");
+            scrollTo("shop");
+          }}
         >
           Explore Festive →
         </button>
       </div>
     </section>
 
+    {/* KIDS */}
     <section id="kids" className="section">
       <div className="section-title">
         <div>
-          <span className="eyebrow">FOR KI & KIDDOS</span>
+          <span className="eyebrow">
+            FOR KI & KIDDOS
+          </span>
 
           <h2>
             Little style,
@@ -735,10 +873,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
         <button
           type="button"
-          onClick={() => {
-            setCategory("Kidswear");
-            scrollTo("shop");
-          }}
+          onClick={() => shopCategory("Kidswear")}
         >
           Shop Kidswear →
         </button>
@@ -746,7 +881,10 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
       <div className="product-grid kids-grid">
         {products
-          .filter((product) => product.category === "Kidswear")
+          .filter(
+            (product) =>
+              product.category === "Kidswear"
+          )
           .map((product) => (
             <ProductCard
               key={product.id}
@@ -761,10 +899,16 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </div>
     </section>
 
-    <section id="style-studio" className="section style-section">
+    {/* STYLE STUDIO */}
+    <section
+      id="style-studio"
+      className="section style-section"
+    >
       <div className="section-title">
         <div>
-          <span className="eyebrow">KIA STYLE STUDIO</span>
+          <span className="eyebrow">
+            KIA STYLE STUDIO
+          </span>
 
           <h2>
             Dress for <em>the moment.</em>
@@ -780,35 +924,50 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
             key={item.title}
             onClick={() => scrollTo("shop")}
           >
-            <img src={item.image} alt={item.title} />
+            <img
+              src={item.image}
+              alt={item.title}
+              loading="lazy"
+            />
+
             <span>{item.title} →</span>
           </button>
         ))}
       </div>
+
+      <div className="swipe-hint">
+        <span>←</span>
+        Swipe to discover
+        <span>→</span>
+      </div>
     </section>
 
+    {/* ABOUT */}
     <section id="about" className="about">
       <img
         src="/image/about-kia-fashion.jpg"
         alt="About Kia Fashion"
+        loading="lazy"
       />
 
       <div>
-        <span className="eyebrow">OUR STORY</span>
+        <span className="eyebrow">
+          OUR STORY
+        </span>
 
         <h2>
           Fashion for <em>Ki & Kiddos.</em>
         </h2>
 
         <p>
-          Kia Fashion brings elegant Indian fashion and joyful
-          kidswear together in a warm, modern shopping
-          experience.
+          Kia Fashion brings elegant Indian fashion and
+          joyful kidswear together in a warm, modern
+          shopping experience.
         </p>
 
         <p>
-          Beautiful fashion should feel effortless, personal
-          and memorable.
+          Beautiful fashion should feel effortless,
+          personal and memorable.
         </p>
 
         <button
@@ -820,8 +979,11 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </div>
     </section>
 
+    {/* NEWSLETTER */}
     <section className="newsletter">
-      <span className="eyebrow">JOIN THE KIA COMMUNITY</span>
+      <span className="eyebrow">
+        JOIN THE KIA COMMUNITY
+      </span>
 
       <h2>
         Something beautiful
@@ -830,20 +992,23 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       </h2>
 
       <p>
-        Get new collection updates, styling inspiration and
-        special offers.
+        Get new collection updates, styling inspiration
+        and special offers.
       </p>
 
       <div className="newsletter-form">
         <input
           type="email"
           placeholder="Your email address"
+          aria-label="Email address"
         />
 
         <button
           type="button"
           onClick={() =>
-            alert("Thank you for joining Kia Fashion!")
+            alert(
+              "Thank you for joining Kia Fashion!"
+            )
           }
         >
           Subscribe →
@@ -852,6 +1017,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     </section>
   </main>
 
+  {/* FOOTER */}
   <footer id="contact" className="footer">
     <div className="footer-brand">
       <strong>KIA FASHION</strong>
@@ -861,11 +1027,17 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     <div>
       <h4>Shop</h4>
 
-      <button type="button" onClick={() => scrollTo("shop")}>
+      <button
+        type="button"
+        onClick={() => scrollTo("shop")}
+      >
         Sarees
       </button>
 
-      <button type="button" onClick={() => scrollTo("kids")}>
+      <button
+        type="button"
+        onClick={() => scrollTo("kids")}
+      >
         Kidswear
       </button>
 
@@ -897,6 +1069,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
     <div>
       <h4>Customer Care</h4>
+
       <p>Mon–Sat, 10 AM–6 PM</p>
       <p>Easy returns</p>
       <p>COD available</p>
@@ -908,13 +1081,20 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     © {new Date().getFullYear()} Kia Fashion. All rights reserved.
   </div>
 
+  {/* MOBILE BOTTOM NAVIGATION */}
   <div className="mobile-bottom-bar">
-    <button type="button" onClick={() => scrollTo("home")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("home")}
+    >
       <span>⌂</span>
       Home
     </button>
 
-    <button type="button" onClick={() => scrollTo("shop")}>
+    <button
+      type="button"
+      onClick={() => scrollTo("shop")}
+    >
       <span>⌕</span>
       Shop
     </button>
@@ -931,14 +1111,18 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       type="button"
       onClick={() => setCartOpen(true)}
     >
-      <span>
+      <span className="bottom-cart-icon">
         🛒
-        {cartCount > 0 && <b>{cartCount}</b>}
+        {cartCount > 0 && (
+          <b>{cartCount}</b>
+        )}
       </span>
+
       Cart
     </button>
   </div>
 
+  {/* CART DRAWER */}
   {cartOpen && (
     <div
       className="overlay"
@@ -950,7 +1134,10 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
       >
         <div className="drawer-header">
           <div>
-            <span className="eyebrow">YOUR KIA BAG</span>
+            <span className="eyebrow">
+              YOUR KIA BAG
+            </span>
+
             <h2>Shopping Cart</h2>
           </div>
 
@@ -970,8 +1157,8 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
             <h3>Your cart is empty</h3>
 
             <p>
-              Add something beautiful to your Kia Fashion
-              cart.
+              Add something beautiful to your Kia
+              Fashion cart.
             </p>
 
             <button
@@ -988,8 +1175,14 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
           <>
             <div className="cart-items">
               {cart.map((item) => (
-                <div className="cart-item" key={item.id}>
-                  <img src={item.image} alt={item.name} />
+                <div
+                  className="cart-item"
+                  key={item.id}
+                >
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                  />
 
                   <div className="cart-item-info">
                     <span>{item.category}</span>
@@ -997,14 +1190,20 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
                     <h3>{item.name}</h3>
 
                     <strong>
-                      ₹{item.price.toLocaleString("en-IN")}
+                      ₹
+                      {item.price.toLocaleString(
+                        "en-IN"
+                      )}
                     </strong>
 
                     <div className="quantity">
                       <button
                         type="button"
                         onClick={() =>
-                          updateQuantity(item.id, -1)
+                          updateQuantity(
+                            item.id,
+                            -1
+                          )
                         }
                       >
                         −
@@ -1015,7 +1214,10 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
                       <button
                         type="button"
                         onClick={() =>
-                          updateQuantity(item.id, 1)
+                          updateQuantity(
+                            item.id,
+                            1
+                          )
                         }
                       >
                         +
@@ -1041,7 +1243,10 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
                 <span>Subtotal</span>
 
                 <strong>
-                  ₹{cartTotal.toLocaleString("en-IN")}
+                  ₹
+                  {cartTotal.toLocaleString(
+                    "en-IN"
+                  )}
                 </strong>
               </div>
 
@@ -1064,7 +1269,9 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
               <button
                 type="button"
                 className="continue"
-                onClick={() => setCartOpen(false)}
+                onClick={() =>
+                  setCartOpen(false)
+                }
               >
                 Continue Shopping
               </button>
@@ -1075,6 +1282,7 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
     </div>
   )}
 
+  {/* QUICK VIEW MODAL */}
   {preview && (
     <div
       className="overlay modal-overlay"
@@ -1094,7 +1302,10 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
         </button>
 
         <div className="modal-image">
-          <img src={preview.image} alt={preview.name} />
+          <img
+            src={preview.image}
+            alt={preview.name}
+          />
         </div>
 
         <div className="modal-details">
@@ -1109,7 +1320,9 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
               {preview.rating}
             </span>
 
-            <span className="stars">★★★★★</span>
+            <span className="stars">
+              ★★★★★
+            </span>
 
             <span className="reviews">
               ({preview.reviews})
@@ -1117,10 +1330,16 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
           </div>
 
           <div className="modal-price">
-            ₹{preview.price.toLocaleString("en-IN")}
+            ₹
+            {preview.price.toLocaleString(
+              "en-IN"
+            )}
 
             <del>
-              ₹{preview.oldPrice.toLocaleString("en-IN")}
+              ₹
+              {preview.oldPrice.toLocaleString(
+                "en-IN"
+              )}
             </del>
           </div>
 
@@ -1128,9 +1347,18 @@ return ( <div className="app"> <div className="announcement"> <span>FREE SHIPPIN
 
           <div className="offers">
             <strong>Special Offers</strong>
-            <span>✓ Extra 10% off on selected products</span>
-            <span>✓ Free delivery over ₹2,500</span>
-            <span>✓ Cash on Delivery available</span>
+
+            <span>
+              ✓ Extra 10% off on selected products
+            </span>
+
+            <span>
+              ✓ Free delivery over ₹2,500
+            </span>
+
+            <span>
+              ✓ Cash on Delivery available
+            </span>
           </div>
 
           <div className="sizes">
