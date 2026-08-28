@@ -151,6 +151,105 @@ const styleEdits = [
   },
 ];
 
+const categories = [
+  "All",
+  "Silk Saree",
+  "Banarasi Saree",
+  "Festive Saree",
+  "Designer Saree",
+  "Kidswear",
+];
+
+function ProductCard({
+  product,
+  wishlist,
+  toggleWishlist,
+  addToCart,
+  setPreview,
+  setCartOpen,
+}) {
+  const liked = wishlist.some((item) => item.id === product.id);
+
+  const discount = Math.round(
+    ((product.oldPrice - product.price) / product.oldPrice) * 100
+  );
+
+  return (
+    <article className="product-card">
+      <div className="product-image">
+        <img src={product.image} alt={product.name} loading="lazy" />
+
+        <span className="deal-pill">{product.tag}</span>
+
+        <button
+          type="button"
+          className={`wishlist ${liked ? "active" : ""}`}
+          onClick={() => toggleWishlist(product)}
+          aria-label={
+            liked
+              ? `Remove ${product.name} from wishlist`
+              : `Add ${product.name} to wishlist`
+          }
+          aria-pressed={liked}
+        >
+          {liked ? "♥" : "♡"}
+        </button>
+
+        <button
+          type="button"
+          className="quick-view"
+          onClick={() => setPreview(product)}
+        >
+          Quick View
+        </button>
+      </div>
+
+      <div className="product-content">
+        <span className="category-label">{product.category}</span>
+
+        <h3>{product.name}</h3>
+
+        <div className="rating">
+          <span className="rating-number">{product.rating}</span>
+          <span className="stars">★★★★★</span>
+          <span className="reviews">({product.reviews})</span>
+        </div>
+
+        <div className="price">
+          <strong>₹{product.price.toLocaleString("en-IN")}</strong>
+          <del>₹{product.oldPrice.toLocaleString("en-IN")}</del>
+          <span>{discount}% off</span>
+        </div>
+
+        <p className="delivery-text">
+          <b>FREE Delivery</b> · COD available
+        </p>
+
+        <div className="product-actions">
+          <button
+            type="button"
+            className="add-button"
+            onClick={() => addToCart(product)}
+          >
+            Add to Cart
+          </button>
+
+          <button
+            type="button"
+            className="buy-button"
+            onClick={() => {
+              addToCart(product);
+              setCartOpen(true);
+            }}
+          >
+            Buy Now
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function App() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
@@ -218,6 +317,14 @@ export default function App() {
     setMenuOpen(false);
   };
 
+  const selectCategory = (value) => {
+    setCategory(value);
+
+    if (value === "Kidswear") {
+      setTimeout(() => scrollTo("kids"), 50);
+    }
+  };
+
   const cartCount = cart.reduce(
     (total, item) => total + item.quantity,
     0
@@ -229,107 +336,37 @@ export default function App() {
   );
 
   const filteredProducts = useMemo(() => {
-    return products
-      .filter((product) => {
-        const query = search.trim().toLowerCase();
+    const query = search.trim().toLowerCase();
 
-        const matchesSearch =
-          !query ||
-          product.name.toLowerCase().includes(query) ||
-          product.category.toLowerCase().includes(query);
+    const result = products.filter((product) => {
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query);
 
-        const matchesCategory =
-          category === "All" || product.category === category;
+      const matchesCategory =
+        category === "All" || product.category === category;
 
-        return matchesSearch && matchesCategory;
-      })
-      .sort((a, b) => {
-        if (sort === "low") return a.price - b.price;
-        if (sort === "high") return b.price - a.price;
-        if (sort === "rating") return b.rating - a.rating;
+      return matchesSearch && matchesCategory;
+    });
 
-        return 0;
-      });
+    if (sort === "low") {
+      return [...result].sort((a, b) => a.price - b.price);
+    }
+
+    if (sort === "high") {
+      return [...result].sort((a, b) => b.price - a.price);
+    }
+
+    if (sort === "rating") {
+      return [...result].sort((a, b) => b.rating - a.rating);
+    }
+
+    return result;
   }, [search, category, sort]);
-
-  const ProductCard = ({ product }) => {
-    const liked = wishlist.some((item) => item.id === product.id);
-
-    const discount = Math.round(
-      ((product.oldPrice - product.price) / product.oldPrice) * 100
-    );
-
-    return (
-      <article className="product-card">
-        <div className="product-image">
-          <img src={product.image} alt={product.name} />
-
-          <span className="deal-pill">{product.tag}</span>
-
-          <button
-            className={`wishlist ${liked ? "active" : ""}`}
-            onClick={() => toggleWishlist(product)}
-            aria-label="Wishlist"
-          >
-            {liked ? "♥" : "♡"}
-          </button>
-
-          <button
-            className="quick-view"
-            onClick={() => setPreview(product)}
-          >
-            Quick View
-          </button>
-        </div>
-
-        <div className="product-content">
-          <span className="category-label">{product.category}</span>
-
-          <h3>{product.name}</h3>
-
-          <div className="rating">
-            <span className="rating-number">{product.rating}</span>
-            <span className="stars">★★★★★</span>
-            <span className="reviews">({product.reviews})</span>
-          </div>
-
-          <div className="price">
-            <strong>₹{product.price.toLocaleString()}</strong>
-            <del>₹{product.oldPrice.toLocaleString()}</del>
-            <span>{discount}% off</span>
-          </div>
-
-          <p className="delivery-text">
-            <b>FREE Delivery</b> · COD available
-          </p>
-
-          <div className="product-actions">
-            <button
-              className="add-button"
-              onClick={() => addToCart(product)}
-            >
-              Add to Cart
-            </button>
-
-            <button
-              className="buy-button"
-              onClick={() => {
-                addToCart(product);
-                setCartOpen(true);
-              }}
-            >
-              Buy Now
-            </button>
-          </div>
-        </div>
-      </article>
-    );
-  };
 
   return (
     <div className="app">
-
-      {/* ANNOUNCEMENT */}
       <div className="announcement">
         <span>FREE SHIPPING OVER ₹2,500</span>
         <span>•</span>
@@ -338,18 +375,22 @@ export default function App() {
         <span>COD AVAILABLE</span>
       </div>
 
-      {/* HEADER */}
       <header className="header">
         <button
+          type="button"
           className="menu-button"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => setMenuOpen((value) => !value)}
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
         >
           ☰
         </button>
 
         <button
+          type="button"
           className="logo"
           onClick={() => scrollTo("home")}
+          aria-label="Kia Fashion home"
         >
           <span>KIA</span>
           <small>FASHION</small>
@@ -363,26 +404,34 @@ export default function App() {
         <div className="desktop-search">
           <select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(event) => selectCategory(event.target.value)}
+            aria-label="Search category"
           >
-            <option value="All">All</option>
-            <option value="Silk Saree">Silk Saree</option>
-            <option value="Banarasi Saree">Banarasi Saree</option>
-            <option value="Festive Saree">Festive Saree</option>
-            <option value="Designer Saree">Designer Saree</option>
-            <option value="Kidswear">Kidswear</option>
+            {categories.map((item) => (
+              <option value={item} key={item}>
+                {item}
+              </option>
+            ))}
           </select>
 
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search Kia Fashion"
+            aria-label="Search Kia Fashion"
           />
 
-          <button>⌕</button>
+          <button
+            type="button"
+            onClick={() => scrollTo("shop")}
+            aria-label="Search"
+          >
+            ⌕
+          </button>
         </div>
 
         <button
+          type="button"
           className="header-link account"
           onClick={() => alert("Welcome to Kia Fashion")}
         >
@@ -391,6 +440,7 @@ export default function App() {
         </button>
 
         <button
+          type="button"
           className="header-link orders"
           onClick={() => alert("Your orders will appear here.")}
         >
@@ -399,66 +449,103 @@ export default function App() {
         </button>
 
         <button
+          type="button"
           className="cart-button"
           onClick={() => setCartOpen(true)}
+          aria-label={`Cart with ${cartCount} items`}
         >
           <span>🛒</span>
-          <b>{cartCount}</b>
+          {cartCount > 0 && <b>{cartCount}</b>}
           <strong>Cart</strong>
         </button>
 
         <button
+          type="button"
           className="mobile-search-button"
-          onClick={() => setMobileSearch(!mobileSearch)}
+          onClick={() => setMobileSearch((value) => !value)}
+          aria-label="Toggle search"
+          aria-expanded={mobileSearch}
         >
           🔍
         </button>
       </header>
 
-      {/* MOBILE SEARCH */}
       {mobileSearch && (
         <div className="mobile-search">
           <input
             autoFocus
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             placeholder="Search sarees, kidswear..."
+            aria-label="Mobile search"
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                setMobileSearch(false);
+                scrollTo("shop");
+              }
+            }}
           />
-          <button onClick={() => setMobileSearch(false)}>
+
+          <button
+            type="button"
+            onClick={() => {
+              setMobileSearch(false);
+              scrollTo("shop");
+            }}
+          >
             Search
           </button>
         </div>
       )}
 
-      {/* NAV */}
       <nav className={`nav ${menuOpen ? "show" : ""}`}>
-        <button onClick={() => scrollTo("home")}>Home</button>
-        <button onClick={() => scrollTo("collections")}>
+        <button type="button" onClick={() => scrollTo("home")}>
+          Home
+        </button>
+
+        <button type="button" onClick={() => scrollTo("collections")}>
           Collections
         </button>
-        <button onClick={() => scrollTo("shop")}>Sarees</button>
-        <button onClick={() => scrollTo("kids")}>Kidswear</button>
-        <button onClick={() => scrollTo("style-studio")}>
+
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("All");
+            scrollTo("shop");
+          }}
+        >
+          Sarees
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("Kidswear");
+            scrollTo("kids");
+          }}
+        >
+          Kidswear
+        </button>
+
+        <button type="button" onClick={() => scrollTo("style-studio")}>
           Style Studio
         </button>
-        <button onClick={() => scrollTo("about")}>Our Story</button>
-        <button onClick={() => scrollTo("contact")}>
+
+        <button type="button" onClick={() => scrollTo("about")}>
+          Our Story
+        </button>
+
+        <button type="button" onClick={() => scrollTo("contact")}>
           Customer Care
         </button>
       </nav>
 
-      {/* HERO */}
       <main>
         <section id="home" className="hero">
-          <img
-            src="/image/hero-saree.jpg"
-            alt="Kia Fashion"
-          />
+          <img src="/image/hero-saree.jpg" alt="Kia Fashion collection" />
 
           <div className="hero-content">
-            <span className="eyebrow">
-              THE NEW KIA COLLECTION
-            </span>
+            <span className="eyebrow">THE NEW KIA COLLECTION</span>
 
             <h1>
               Elegance,
@@ -467,17 +554,16 @@ export default function App() {
             </h1>
 
             <p>
-              Graceful sarees and joyful kidswear for
-              moments worth remembering.
+              Graceful sarees and joyful kidswear for moments worth
+              remembering.
             </p>
 
-            <button onClick={() => scrollTo("shop")}>
+            <button type="button" onClick={() => scrollTo("shop")}>
               Explore Collection <span>→</span>
             </button>
           </div>
         </section>
 
-        {/* BENEFITS */}
         <section className="benefits">
           <div>
             <span>🚚</span>
@@ -512,7 +598,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* COLLECTIONS */}
         <section id="collections" className="section">
           <div className="section-title">
             <div>
@@ -522,7 +607,7 @@ export default function App() {
               </h2>
             </div>
 
-            <button onClick={() => scrollTo("shop")}>
+            <button type="button" onClick={() => scrollTo("shop")}>
               See all →
             </button>
           </div>
@@ -530,6 +615,7 @@ export default function App() {
           <div className="collection-row">
             {collections.map((item) => (
               <button
+                type="button"
                 className="collection-card"
                 key={item.title}
                 onClick={() => {
@@ -537,7 +623,7 @@ export default function App() {
                   scrollTo("shop");
                 }}
               >
-                <img src={item.image} alt={item.title} />
+                <img src={item.image} alt={item.title} loading="lazy" />
 
                 <div>
                   <span>{item.text}</span>
@@ -549,7 +635,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* SHOP */}
         <section id="shop" className="section shop-section">
           <div className="section-title">
             <div>
@@ -566,15 +651,9 @@ export default function App() {
 
           <div className="shop-controls">
             <div className="category-pills">
-              {[
-                "All",
-                "Silk Saree",
-                "Banarasi Saree",
-                "Festive Saree",
-                "Designer Saree",
-                "Kidswear",
-              ].map((item) => (
+              {categories.map((item) => (
                 <button
+                  type="button"
                   className={category === item ? "selected" : ""}
                   key={item}
                   onClick={() => setCategory(item)}
@@ -586,7 +665,8 @@ export default function App() {
 
             <select
               value={sort}
-              onChange={(e) => setSort(e.target.value)}
+              onChange={(event) => setSort(event.target.value)}
+              aria-label="Sort products"
             >
               <option value="featured">Featured</option>
               <option value="low">Price: Low to High</option>
@@ -595,19 +675,33 @@ export default function App() {
             </select>
           </div>
 
+          <div className="mobile-swipe-hint">
+            <span>←</span>
+            Swipe to explore
+            <span>→</span>
+          </div>
+
           <div className="product-grid">
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
+                  wishlist={wishlist}
+                  toggleWishlist={toggleWishlist}
+                  addToCart={addToCart}
+                  setPreview={setPreview}
+                  setCartOpen={setCartOpen}
                 />
               ))
             ) : (
               <div className="no-products">
+                <div className="no-products-icon">⌕</div>
                 <h3>No products found</h3>
                 <p>Try another search or category.</p>
+
                 <button
+                  type="button"
                   onClick={() => {
                     setSearch("");
                     setCategory("All");
@@ -620,11 +714,11 @@ export default function App() {
           </div>
         </section>
 
-        {/* FESTIVE */}
         <section className="feature-banner">
           <img
             src="/image/festive-collection.jpg"
             alt="Festive collection"
+            loading="lazy"
           />
 
           <div>
@@ -637,17 +731,16 @@ export default function App() {
             </h2>
 
             <p>
-              Rich colours, graceful drapes and beautiful
-              details for your most memorable occasions.
+              Rich colours, graceful drapes and beautiful details for your
+              most memorable occasions.
             </p>
 
-            <button onClick={() => scrollTo("shop")}>
+            <button type="button" onClick={() => scrollTo("shop")}>
               Explore Festive →
             </button>
           </div>
         </section>
 
-        {/* KIDS */}
         <section id="kids" className="section">
           <div className="section-title">
             <div>
@@ -659,13 +752,20 @@ export default function App() {
             </div>
 
             <button
+              type="button"
               onClick={() => {
                 setCategory("Kidswear");
-                scrollTo("shop");
+                scrollTo("kids");
               }}
             >
               Shop Kidswear →
             </button>
+          </div>
+
+          <div className="mobile-swipe-hint">
+            <span>←</span>
+            Swipe to explore
+            <span>→</span>
           </div>
 
           <div className="product-grid kids-grid">
@@ -675,12 +775,16 @@ export default function App() {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  wishlist={wishlist}
+                  toggleWishlist={toggleWishlist}
+                  addToCart={addToCart}
+                  setPreview={setPreview}
+                  setCartOpen={setCartOpen}
                 />
               ))}
           </div>
         </section>
 
-        {/* STYLE */}
         <section id="style-studio" className="section style-section">
           <div className="section-title">
             <div>
@@ -691,25 +795,32 @@ export default function App() {
             </div>
           </div>
 
+          <div className="mobile-swipe-hint">
+            <span>←</span>
+            Swipe to explore
+            <span>→</span>
+          </div>
+
           <div className="style-row">
             {styleEdits.map((item) => (
               <button
+                type="button"
                 className="style-card"
                 key={item.title}
                 onClick={() => scrollTo("shop")}
               >
-                <img src={item.image} alt={item.title} />
+                <img src={item.image} alt={item.title} loading="lazy" />
                 <span>{item.title} →</span>
               </button>
             ))}
           </div>
         </section>
 
-        {/* ABOUT */}
         <section id="about" className="about">
           <img
             src="/image/about-kia-fashion.jpg"
             alt="About Kia Fashion"
+            loading="lazy"
           />
 
           <div>
@@ -720,23 +831,21 @@ export default function App() {
             </h2>
 
             <p>
-              Kia Fashion brings elegant Indian fashion and
-              joyful kidswear together in a warm, modern
-              shopping experience.
+              Kia Fashion brings elegant Indian fashion and joyful kidswear
+              together in a warm, modern shopping experience.
             </p>
 
             <p>
-              Beautiful fashion should feel effortless,
-              personal and memorable.
+              Beautiful fashion should feel effortless, personal and
+              memorable.
             </p>
 
-            <button onClick={() => scrollTo("contact")}>
+            <button type="button" onClick={() => scrollTo("contact")}>
               Discover Kia Fashion →
             </button>
           </div>
         </section>
 
-        {/* NEWSLETTER */}
         <section className="newsletter">
           <span className="eyebrow">JOIN THE KIA COMMUNITY</span>
 
@@ -747,20 +856,16 @@ export default function App() {
           </h2>
 
           <p>
-            Get new collection updates, styling inspiration
-            and special offers.
+            Get new collection updates, styling inspiration and special
+            offers.
           </p>
 
           <div className="newsletter-form">
-            <input
-              type="email"
-              placeholder="Your email address"
-            />
+            <input type="email" placeholder="Your email address" />
 
             <button
-              onClick={() =>
-                alert("Thank you for joining Kia Fashion!")
-              }
+              type="button"
+              onClick={() => alert("Thank you for joining Kia Fashion!")}
             >
               Subscribe →
             </button>
@@ -768,7 +873,6 @@ export default function App() {
         </section>
       </main>
 
-      {/* FOOTER */}
       <footer id="contact" className="footer">
         <div className="footer-brand">
           <strong>KIA FASHION</strong>
@@ -777,23 +881,28 @@ export default function App() {
 
         <div>
           <h4>Shop</h4>
-          <button onClick={() => scrollTo("shop")}>
+
+          <button type="button" onClick={() => scrollTo("shop")}>
             Sarees
           </button>
-          <button onClick={() => scrollTo("kids")}>
+
+          <button type="button" onClick={() => scrollTo("kids")}>
             Kidswear
           </button>
-          <button onClick={() => scrollTo("collections")}>
+
+          <button type="button" onClick={() => scrollTo("collections")}>
             Collections
           </button>
         </div>
 
         <div>
           <h4>Explore</h4>
-          <button onClick={() => scrollTo("style-studio")}>
+
+          <button type="button" onClick={() => scrollTo("style-studio")}>
             Style Studio
           </button>
-          <button onClick={() => scrollTo("about")}>
+
+          <button type="button" onClick={() => scrollTo("about")}>
             Our Story
           </button>
         </div>
@@ -811,24 +920,23 @@ export default function App() {
         © {new Date().getFullYear()} Kia Fashion. All rights reserved.
       </div>
 
-      {/* MOBILE BOTTOM BAR */}
       <div className="mobile-bottom-bar">
-        <button onClick={() => scrollTo("home")}>
+        <button type="button" onClick={() => scrollTo("home")}>
           <span>⌂</span>
           Home
         </button>
 
-        <button onClick={() => scrollTo("shop")}>
+        <button type="button" onClick={() => scrollTo("shop")}>
           <span>⌕</span>
           Shop
         </button>
 
-        <button onClick={() => scrollTo("collections")}>
+        <button type="button" onClick={() => scrollTo("collections")}>
           <span>✦</span>
           Collections
         </button>
 
-        <button onClick={() => setCartOpen(true)}>
+        <button type="button" onClick={() => setCartOpen(true)}>
           <span>
             🛒
             {cartCount > 0 && <b>{cartCount}</b>}
@@ -837,15 +945,15 @@ export default function App() {
         </button>
       </div>
 
-      {/* CART */}
       {cartOpen && (
         <div
           className="overlay"
           onClick={() => setCartOpen(false)}
+          role="presentation"
         >
           <aside
             className="cart-drawer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="drawer-header">
               <div>
@@ -853,7 +961,11 @@ export default function App() {
                 <h2>Shopping Cart</h2>
               </div>
 
-              <button onClick={() => setCartOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setCartOpen(false)}
+                aria-label="Close cart"
+              >
                 ×
               </button>
             </div>
@@ -862,12 +974,13 @@ export default function App() {
               <div className="empty-cart">
                 <span>🛒</span>
                 <h3>Your cart is empty</h3>
+
                 <p>
-                  Add something beautiful to your Kia Fashion
-                  cart.
+                  Add something beautiful to your Kia Fashion cart.
                 </p>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setCartOpen(false);
                     scrollTo("shop");
@@ -885,16 +998,18 @@ export default function App() {
 
                       <div className="cart-item-info">
                         <span>{item.category}</span>
+
                         <h3>{item.name}</h3>
+
                         <strong>
-                          ₹{item.price.toLocaleString()}
+                          ₹{item.price.toLocaleString("en-IN")}
                         </strong>
 
                         <div className="quantity">
                           <button
-                            onClick={() =>
-                              updateQuantity(item.id, -1)
-                            }
+                            type="button"
+                            onClick={() => updateQuantity(item.id, -1)}
+                            aria-label="Decrease quantity"
                           >
                             −
                           </button>
@@ -902,19 +1017,18 @@ export default function App() {
                           <b>{item.quantity}</b>
 
                           <button
-                            onClick={() =>
-                              updateQuantity(item.id, 1)
-                            }
+                            type="button"
+                            onClick={() => updateQuantity(item.id, 1)}
+                            aria-label="Increase quantity"
                           >
                             +
                           </button>
                         </div>
 
                         <button
+                          type="button"
                           className="delete"
-                          onClick={() =>
-                            removeFromCart(item.id)
-                          }
+                          onClick={() => removeFromCart(item.id)}
                         >
                           Remove
                         </button>
@@ -926,27 +1040,26 @@ export default function App() {
                 <div className="cart-summary">
                   <div>
                     <span>Subtotal</span>
+
                     <strong>
-                      ₹{cartTotal.toLocaleString()}
+                      ₹{cartTotal.toLocaleString("en-IN")}
                     </strong>
                   </div>
 
-                  <p>
-                    FREE delivery on orders over ₹2,500
-                  </p>
+                  <p>FREE delivery on orders over ₹2,500</p>
 
                   <button
+                    type="button"
                     className="checkout"
                     onClick={() =>
-                      alert(
-                        "Checkout page can be connected next."
-                      )
+                      alert("Checkout page can be connected next.")
                     }
                   >
                     Proceed to Checkout →
                   </button>
 
                   <button
+                    type="button"
                     className="continue"
                     onClick={() => setCartOpen(false)}
                   >
@@ -959,19 +1072,21 @@ export default function App() {
         </div>
       )}
 
-      {/* QUICK VIEW */}
       {preview && (
         <div
           className="overlay modal-overlay"
           onClick={() => setPreview(null)}
+          role="presentation"
         >
           <div
             className="product-modal"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             <button
+              type="button"
               className="modal-close"
               onClick={() => setPreview(null)}
+              aria-label="Close product preview"
             >
               ×
             </button>
@@ -988,9 +1103,7 @@ export default function App() {
               <h2>{preview.name}</h2>
 
               <div className="rating">
-                <span className="rating-number">
-                  {preview.rating}
-                </span>
+                <span className="rating-number">{preview.rating}</span>
                 <span className="stars">★★★★★</span>
                 <span className="reviews">
                   ({preview.reviews})
@@ -998,9 +1111,10 @@ export default function App() {
               </div>
 
               <div className="modal-price">
-                ₹{preview.price.toLocaleString()}
+                ₹{preview.price.toLocaleString("en-IN")}
+
                 <del>
-                  ₹{preview.oldPrice.toLocaleString()}
+                  ₹{preview.oldPrice.toLocaleString("en-IN")}
                 </del>
               </div>
 
@@ -1015,15 +1129,17 @@ export default function App() {
 
               <div className="sizes">
                 <strong>Select Size</strong>
+
                 <div>
-                  <button>S</button>
-                  <button>M</button>
-                  <button>L</button>
-                  <button>XL</button>
+                  <button type="button">S</button>
+                  <button type="button">M</button>
+                  <button type="button">L</button>
+                  <button type="button">XL</button>
                 </div>
               </div>
 
               <button
+                type="button"
                 className="modal-add"
                 onClick={() => {
                   addToCart(preview);
