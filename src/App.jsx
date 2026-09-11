@@ -1,5 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { BrowserRouter, Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  BrowserRouter,
+  Link,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import "./App.css";
 
 /* =========================
@@ -165,6 +170,17 @@ const categories = [
 ];
 
 /* =========================
+   PRODUCT URL HELPER
+========================= */
+
+const createProductSlug = (name) =>
+  name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+/* =========================
    PRODUCT CARD
 ========================= */
 
@@ -182,10 +198,18 @@ function ProductCard({
     ((product.oldPrice - product.price) / product.oldPrice) * 100
   );
 
+  const productUrl = `/product/${product.id}/${createProductSlug(
+    product.name
+  )}`;
+
   return (
     <article className="product-card">
       <div className="product-image">
-        <Link to={`/product/${product.id}`} className="product-image-link" aria-label={`View ${product.name}`}>
+        <Link
+          to={productUrl}
+          className="product-image-link"
+          aria-label={`View ${product.name}`}
+        >
           <img
             src={product.image}
             alt={product.name}
@@ -223,7 +247,10 @@ function ProductCard({
           {product.category}
         </span>
 
-        <Link to={`/product/${product.id}`} className="product-name-link">
+        <Link
+          to={productUrl}
+          className="product-name-link"
+        >
           <h3>{product.name}</h3>
         </Link>
 
@@ -283,6 +310,7 @@ function ProductCard({
 /* =========================
    PRODUCT DETAIL PAGE
 ========================= */
+
 function ProductPage({
   products,
   wishlist,
@@ -290,220 +318,692 @@ function ProductPage({
   addToCart,
   setCartOpen,
 }) {
-  const { productId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState("M");
   const [pin, setPin] = useState("");
   const [pinMessage, setPinMessage] = useState("");
   const [activeImage, setActiveImage] = useState(0);
 
-  const product = products.find((item) => String(item.id) === String(productId));
+  /* =========================
+     GET PRODUCT FROM URL
+
+     Supports:
+     /product/1
+     /product/1/the-rose-silk-saree
+  ========================= */
+
+  const pathParts = location.pathname
+    .split("/")
+    .filter(Boolean);
+
+  const productId = pathParts[1];
+
+  const productSlug = pathParts[2]
+    ? decodeURIComponent(pathParts[2]).toLowerCase()
+    : "";
+
+  const product = products.find((item) => {
+    const idMatches =
+      String(item.id) === String(productId);
+
+    const slugMatches =
+      !productSlug ||
+      createProductSlug(item.name) === productSlug;
+
+    return idMatches && slugMatches;
+  });
+
   const liked = product
     ? wishlist.some((item) => item.id === product.id)
     : false;
+
+  /* =========================
+     PRODUCT NOT FOUND
+  ========================= */
 
   if (!product) {
     return (
       <div className="product-page-shell">
         <div className="product-not-found">
-          <span className="eyebrow">KIA FASHION</span>
+          <span className="eyebrow">
+            KIA FASHION
+          </span>
+
           <h1>Product not found</h1>
-          <p>The product you are looking for is no longer available.</p>
-          <button type="button" onClick={() => navigate("/")}>← Back to Shopping</button>
+
+          <p>
+            The product you are looking for is
+            no longer available.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+          >
+            ← Back to Shopping
+          </button>
         </div>
       </div>
     );
   }
 
   const discount = Math.round(
-    ((product.oldPrice - product.price) / product.oldPrice) * 100
+    ((product.oldPrice - product.price) /
+      product.oldPrice) *
+      100
   );
 
   const gallery = [product.image];
+
   const related = products
-    .filter((item) => item.id !== product.id && item.category === product.category)
+    .filter(
+      (item) =>
+        item.id !== product.id &&
+        item.category === product.category
+    )
     .slice(0, 3);
+
   const fallbackRelated = products
-    .filter((item) => item.id !== product.id && !related.some((r) => r.id === item.id))
+    .filter(
+      (item) =>
+        item.id !== product.id &&
+        !related.some(
+          (relatedItem) =>
+            relatedItem.id === item.id
+        )
+    )
     .slice(0, 3 - related.length);
-  const relatedProducts = [...related, ...fallbackRelated];
+
+  const relatedProducts = [
+    ...related,
+    ...fallbackRelated,
+  ];
+
+  /* =========================
+     CART ACTIONS
+  ========================= */
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i += 1) addToCart(product);
+    for (let i = 0; i < quantity; i += 1) {
+      addToCart(product);
+    }
+
     setCartOpen(true);
   };
 
   const handleBuyNow = () => {
-    for (let i = 0; i < quantity; i += 1) addToCart(product);
+    for (let i = 0; i < quantity; i += 1) {
+      addToCart(product);
+    }
+
     setCartOpen(true);
   };
 
+  /* =========================
+     PIN CHECKER
+  ========================= */
+
   const checkPin = () => {
     if (!/^\d{6}$/.test(pin)) {
-      setPinMessage("Please enter a valid 6-digit PIN code.");
+      setPinMessage(
+        "Please enter a valid 6-digit PIN code."
+      );
       return;
     }
-    setPinMessage("Delivery is available to this PIN. Estimated delivery: 3–6 days.");
+
+    setPinMessage(
+      "Delivery is available to this PIN. Estimated delivery: 3–6 days."
+    );
   };
 
   return (
     <div className="product-page-shell">
+
+      {/* =========================
+          PRODUCT HEADER
+      ========================= */}
+
       <header className="product-page-header">
-        <button type="button" className="product-back" onClick={() => navigate(-1)}>
+
+        <button
+          type="button"
+          className="product-back"
+          onClick={() => navigate(-1)}
+        >
           ← Back
         </button>
-        <Link to="/" className="product-page-logo">
+
+        <Link
+          to="/"
+          className="product-page-logo"
+        >
           <span>KIA</span>
           <small>FASHION</small>
         </Link>
-        <button type="button" className="product-page-cart" onClick={() => setCartOpen(true)}>
+
+        <button
+          type="button"
+          className="product-page-cart"
+          onClick={() => setCartOpen(true)}
+        >
           🛒 Cart
         </button>
+
       </header>
 
       <main className="product-detail">
+
+        {/* =========================
+            BREADCRUMB
+        ========================= */}
+
         <div className="breadcrumb">
-          <Link to="/">Home</Link><span>›</span><span>{product.category}</span><span>›</span><strong>{product.name}</strong>
+          <Link to="/">Home</Link>
+
+          <span>›</span>
+
+          <span>{product.category}</span>
+
+          <span>›</span>
+
+          <strong>{product.name}</strong>
         </div>
 
+        {/* =========================
+            PRODUCT GRID
+        ========================= */}
+
         <div className="product-detail-grid">
+
+          {/* =========================
+              PRODUCT GALLERY
+          ========================= */}
+
           <section className="product-gallery">
+
             <div className="product-thumbnails">
+
               {gallery.map((image, index) => (
                 <button
                   type="button"
                   key={image + index}
-                  className={activeImage === index ? "active" : ""}
-                  onClick={() => setActiveImage(index)}
+                  className={
+                    activeImage === index
+                      ? "active"
+                      : ""
+                  }
+                  onClick={() =>
+                    setActiveImage(index)
+                  }
                 >
-                  <img src={image} alt={`${product.name} thumbnail ${index + 1}`} />
+                  <img
+                    src={image}
+                    alt={`${product.name} thumbnail ${
+                      index + 1
+                    }`}
+                  />
                 </button>
               ))}
+
             </div>
+
             <div className="product-main-image">
-              <img src={gallery[activeImage]} alt={product.name} />
-              <span className="product-detail-badge">{product.tag}</span>
+
+              <img
+                src={gallery[activeImage]}
+                alt={product.name}
+              />
+
+              <span className="product-detail-badge">
+                {product.tag}
+              </span>
+
               <button
                 type="button"
-                className={`detail-wishlist ${liked ? "active" : ""}`}
-                onClick={() => toggleWishlist(product)}
+                className={`detail-wishlist ${
+                  liked ? "active" : ""
+                }`}
+                onClick={() =>
+                  toggleWishlist(product)
+                }
                 aria-label="Toggle wishlist"
               >
                 {liked ? "♥" : "♡"}
               </button>
+
             </div>
+
           </section>
 
+          {/* =========================
+              PRODUCT INFORMATION
+          ========================= */}
+
           <section className="product-information">
-            <span className="category-label">{product.category}</span>
+
+            <span className="category-label">
+              {product.category}
+            </span>
+
             <h1>{product.name}</h1>
 
             <div className="detail-rating-row">
-              <span className="rating-number">{product.rating}</span>
-              <span className="stars">★★★★★</span>
-              <span className="reviews">{product.reviews} ratings & reviews</span>
+
+              <span className="rating-number">
+                {product.rating}
+              </span>
+
+              <span className="stars">
+                ★★★★★
+              </span>
+
+              <span className="reviews">
+                {product.reviews} ratings & reviews
+              </span>
+
             </div>
 
             <div className="detail-price-row">
-              <strong>₹{product.price.toLocaleString("en-IN")}</strong>
-              <del>₹{product.oldPrice.toLocaleString("en-IN")}</del>
+
+              <strong>
+                ₹{product.price.toLocaleString("en-IN")}
+              </strong>
+
+              <del>
+                ₹
+                {product.oldPrice.toLocaleString(
+                  "en-IN"
+                )}
+              </del>
+
               <span>{discount}% off</span>
+
             </div>
-            <p className="tax-note">Inclusive of all applicable taxes</p>
+
+            <p className="tax-note">
+              Inclusive of all applicable taxes
+            </p>
 
             <div className="detail-divider" />
 
-            <p className="product-description">{product.description}</p>
+            <p className="product-description">
+              {product.description}
+            </p>
+
+            {/* =========================
+                OFFERS
+            ========================= */}
 
             <div className="detail-offers">
-              <strong>Special offers</strong>
-              <span>✓ Extra 10% off on selected products</span>
-              <span>✓ Free delivery on orders over ₹2,500</span>
-              <span>✓ Cash on Delivery available</span>
+
+              <strong>
+                Special offers
+              </strong>
+
+              <span>
+                ✓ Extra 10% off on selected products
+              </span>
+
+              <span>
+                ✓ Free delivery on orders over ₹2,500
+              </span>
+
+              <span>
+                ✓ Cash on Delivery available
+              </span>
+
             </div>
 
+            {/* =========================
+                SIZE
+            ========================= */}
+
             <div className="detail-option">
-              <div className="option-heading"><strong>Select Size</strong><span>Size Guide</span></div>
+
+              <div className="option-heading">
+
+                <strong>
+                  Select Size
+                </strong>
+
+                <span>
+                  Size Guide
+                </span>
+
+              </div>
+
               <div className="detail-sizes">
-                {["S", "M", "L", "XL"].map((size) => (
-                  <button
-                    type="button"
-                    key={size}
-                    className={selectedSize === size ? "selected" : ""}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
+
+                {["S", "M", "L", "XL"].map(
+                  (size) => (
+                    <button
+                      type="button"
+                      key={size}
+                      className={
+                        selectedSize === size
+                          ? "selected"
+                          : ""
+                      }
+                      onClick={() =>
+                        setSelectedSize(size)
+                      }
+                    >
+                      {size}
+                    </button>
+                  )
+                )}
+
               </div>
+
             </div>
 
+            {/* =========================
+                QUANTITY
+            ========================= */}
+
             <div className="detail-option">
-              <strong>Quantity</strong>
+
+              <strong>
+                Quantity
+              </strong>
+
               <div className="detail-quantity">
-                <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity((value) =>
+                      Math.max(1, value - 1)
+                    )
+                  }
+                >
+                  −
+                </button>
+
                 <b>{quantity}</b>
-                <button type="button" onClick={() => setQuantity((value) => value + 1)}>+</button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity(
+                      (value) => value + 1
+                    )
+                  }
+                >
+                  +
+                </button>
+
               </div>
+
             </div>
+
+            {/* =========================
+                ACTIONS
+            ========================= */}
 
             <div className="detail-actions">
-              <button type="button" className="detail-add" onClick={handleAddToCart}>🛒 Add to Cart</button>
-              <button type="button" className="detail-buy" onClick={handleBuyNow}>⚡ Buy Now</button>
+
+              <button
+                type="button"
+                className="detail-add"
+                onClick={handleAddToCart}
+              >
+                🛒 Add to Cart
+              </button>
+
+              <button
+                type="button"
+                className="detail-buy"
+                onClick={handleBuyNow}
+              >
+                ⚡ Buy Now
+              </button>
+
             </div>
 
+            {/* =========================
+                PIN CHECKER
+            ========================= */}
+
             <div className="pin-checker">
-              <strong>Check delivery</strong>
+
+              <strong>
+                Check delivery
+              </strong>
+
               <div>
+
                 <input
                   value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) =>
+                    setPin(
+                      e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 6)
+                    )
+                  }
                   placeholder="Enter 6-digit PIN code"
                   inputMode="numeric"
                 />
-                <button type="button" onClick={checkPin}>Check</button>
+
+                <button
+                  type="button"
+                  onClick={checkPin}
+                >
+                  Check
+                </button>
+
               </div>
-              {pinMessage && <p>{pinMessage}</p>}
+
+              {pinMessage && (
+                <p>{pinMessage}</p>
+              )}
+
             </div>
 
+            {/* =========================
+                SERVICES
+            ========================= */}
+
             <div className="service-points">
-              <div><span>🚚</span><section><strong>Free Delivery</strong><small>On orders over ₹2,500</small></section></div>
-              <div><span>↩</span><section><strong>Easy Returns</strong><small>Simple return policy</small></section></div>
-              <div><span>🔒</span><section><strong>Secure Checkout</strong><small>Your payment is protected</small></section></div>
+
+              <div>
+                <span>🚚</span>
+
+                <section>
+                  <strong>
+                    Free Delivery
+                  </strong>
+
+                  <small>
+                    On orders over ₹2,500
+                  </small>
+                </section>
+              </div>
+
+              <div>
+                <span>↩</span>
+
+                <section>
+                  <strong>
+                    Easy Returns
+                  </strong>
+
+                  <small>
+                    Simple return policy
+                  </small>
+                </section>
+              </div>
+
+              <div>
+                <span>🔒</span>
+
+                <section>
+                  <strong>
+                    Secure Checkout
+                  </strong>
+
+                  <small>
+                    Your payment is protected
+                  </small>
+                </section>
+              </div>
+
             </div>
+
           </section>
         </div>
 
+        {/* =========================
+            PRODUCT DETAILS
+        ========================= */}
+
         <section className="product-detail-info">
-          <div><span className="eyebrow">PRODUCT DETAILS</span><h2>Made for beautiful moments.</h2></div>
+
+          <div>
+            <span className="eyebrow">
+              PRODUCT DETAILS
+            </span>
+
+            <h2>
+              Made for beautiful moments.
+            </h2>
+          </div>
+
           <div className="detail-info-grid">
-            <div><strong>Category</strong><span>{product.category}</span></div>
-            <div><strong>Collection</strong><span>Kia Fashion</span></div>
-            <div><strong>Availability</strong><span>In stock</span></div>
-            <div><strong>Delivery</strong><span>Across India</span></div>
+
+            <div>
+              <strong>
+                Category
+              </strong>
+
+              <span>
+                {product.category}
+              </span>
+            </div>
+
+            <div>
+              <strong>
+                Collection
+              </strong>
+
+              <span>
+                Kia Fashion
+              </span>
+            </div>
+
+            <div>
+              <strong>
+                Availability
+              </strong>
+
+              <span>
+                In stock
+              </span>
+            </div>
+
+            <div>
+              <strong>
+                Delivery
+              </strong>
+
+              <span>
+                Across India
+              </span>
+            </div>
+
           </div>
+
           <div className="shipping-note">
-            <strong>Shipping & Returns</strong>
-            <p>Orders are carefully packed before dispatch. Delivery time depends on your location. Please check the product and size before placing your order.</p>
+
+            <strong>
+              Shipping & Returns
+            </strong>
+
+            <p>
+              Orders are carefully packed before
+              dispatch. Delivery time depends on your
+              location. Please check the product and
+              size before placing your order.
+            </p>
+
           </div>
+
         </section>
+
+        {/* =========================
+            RELATED PRODUCTS
+        ========================= */}
 
         {relatedProducts.length > 0 && (
           <section className="related-products">
-            <div className="section-title"><div><span className="eyebrow">YOU MAY ALSO LIKE</span><h2>More <em>from Kia</em></h2></div></div>
-            <div className="related-grid">
-              {relatedProducts.map((item) => (
-                <Link className="related-card" to={`/product/${item.id}`} key={item.id}>
-                  <div><img src={item.image} alt={item.name} /><span>{item.tag}</span></div>
-                  <small>{item.category}</small>
-                  <h3>{item.name}</h3>
-                  <strong>₹{item.price.toLocaleString("en-IN")}</strong>
-                </Link>
-              ))}
+
+            <div className="section-title">
+
+              <div>
+                <span className="eyebrow">
+                  YOU MAY ALSO LIKE
+                </span>
+
+                <h2>
+                  More <em>from Kia</em>
+                </h2>
+              </div>
+
             </div>
+
+            <div className="related-grid">
+
+              {relatedProducts.map((item) => (
+
+                <Link
+                  className="related-card"
+                  to={`/product/${item.id}/${createProductSlug(
+                    item.name
+                  )}`}
+                  key={item.id}
+                >
+
+                  <div>
+
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                    />
+
+                    <span>
+                      {item.tag}
+                    </span>
+
+                  </div>
+
+                  <small>
+                    {item.category}
+                  </small>
+
+                  <h3>
+                    {item.name}
+                  </h3>
+
+                  <strong>
+                    ₹
+                    {item.price.toLocaleString(
+                      "en-IN"
+                    )}
+                  </strong>
+
+                </Link>
+
+              ))}
+
+            </div>
+
           </section>
         )}
+
       </main>
     </div>
   );
@@ -514,33 +1014,50 @@ function ProductPage({
 ========================= */
 
 function KiaFashionApp() {
+
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
-  const [sort, setSort] = useState("featured");
 
-  const [cartOpen, setCartOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [preview, setPreview] = useState(null);
-  const [mobileSearch, setMobileSearch] = useState(false);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] =
+    useState("All");
+
+  const [sort, setSort] =
+    useState("featured");
+
+  const [cartOpen, setCartOpen] =
+    useState(false);
+
+  const [menuOpen, setMenuOpen] =
+    useState(false);
+
+  const [preview, setPreview] =
+    useState(null);
+
+  const [mobileSearch, setMobileSearch] =
+    useState(false);
 
   /* =========================
      CART
   ========================= */
 
   const addToCart = (product) => {
+
     setCart((current) => {
+
       const existing = current.find(
-        (item) => item.id === product.id
+        (item) =>
+          item.id === product.id
       );
 
       if (existing) {
+
         return current.map((item) =>
           item.id === product.id
             ? {
                 ...item,
-                quantity: item.quantity + 1,
+                quantity:
+                  item.quantity + 1,
               }
             : item
         );
@@ -557,25 +1074,36 @@ function KiaFashionApp() {
   };
 
   const removeFromCart = (id) => {
+
     setCart((current) =>
-      current.filter((item) => item.id !== id)
+      current.filter(
+        (item) => item.id !== id
+      )
     );
   };
 
-  const updateQuantity = (id, amount) => {
+  const updateQuantity = (
+    id,
+    amount
+  ) => {
+
     setCart((current) =>
       current
         .map((item) => {
+
           if (item.id !== id) {
             return item;
           }
 
           return {
             ...item,
-            quantity: item.quantity + amount,
+            quantity:
+              item.quantity + amount,
           };
         })
-        .filter((item) => item.quantity > 0)
+        .filter(
+          (item) => item.quantity > 0
+        )
     );
   };
 
@@ -584,18 +1112,26 @@ function KiaFashionApp() {
   ========================= */
 
   const toggleWishlist = (product) => {
+
     setWishlist((current) => {
+
       const exists = current.some(
-        (item) => item.id === product.id
+        (item) =>
+          item.id === product.id
       );
 
       if (exists) {
+
         return current.filter(
-          (item) => item.id !== product.id
+          (item) =>
+            item.id !== product.id
         );
       }
 
-      return [...current, product];
+      return [
+        ...current,
+        product,
+      ];
     });
   };
 
@@ -604,9 +1140,12 @@ function KiaFashionApp() {
   ========================= */
 
   const scrollTo = (id) => {
-    const element = document.getElementById(id);
+
+    const element =
+      document.getElementById(id);
 
     if (element) {
+
       element.scrollIntoView({
         behavior: "smooth",
         block: "start",
@@ -616,18 +1155,25 @@ function KiaFashionApp() {
     setMenuOpen(false);
   };
 
-  const selectCategory = (value) => {
+  const selectCategory = (
+    value
+  ) => {
+
     setCategory(value);
 
     setTimeout(() => {
-      const shop = document.getElementById("shop");
+
+      const shop =
+        document.getElementById("shop");
 
       if (shop) {
+
         shop.scrollIntoView({
           behavior: "smooth",
           block: "start",
         });
       }
+
     }, 50);
 
     setMenuOpen(false);
@@ -638,13 +1184,15 @@ function KiaFashionApp() {
   ========================= */
 
   const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
+    (total, item) =>
+      total + item.quantity,
     0
   );
 
   const cartTotal = cart.reduce(
     (total, item) =>
-      total + item.price * item.quantity,
+      total +
+      item.price * item.quantity,
     0
   );
 
@@ -652,60 +1200,99 @@ function KiaFashionApp() {
      FILTER + SORT
   ========================= */
 
-  const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const filteredProducts =
+    useMemo(() => {
 
-    const result = products.filter((product) => {
-      const matchesSearch =
-        !query ||
-        product.name.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query);
+      const query =
+        search.trim().toLowerCase();
 
-      const matchesCategory =
-        category === "All" ||
-        product.category === category;
+      const result =
+        products.filter((product) => {
 
-      return matchesSearch && matchesCategory;
-    });
+          const matchesSearch =
+            !query ||
+            product.name
+              .toLowerCase()
+              .includes(query) ||
+            product.category
+              .toLowerCase()
+              .includes(query);
 
-    if (sort === "low") {
-      return [...result].sort(
-        (a, b) => a.price - b.price
-      );
-    }
+          const matchesCategory =
+            category === "All" ||
+            product.category === category;
 
-    if (sort === "high") {
-      return [...result].sort(
-        (a, b) => b.price - a.price
-      );
-    }
+          return (
+            matchesSearch &&
+            matchesCategory
+          );
+        });
 
-    if (sort === "rating") {
-      return [...result].sort(
-        (a, b) => b.rating - a.rating
-      );
-    }
+      if (sort === "low") {
 
-    return result;
-  }, [search, category, sort]);
+        return [...result].sort(
+          (a, b) =>
+            a.price - b.price
+        );
+      }
+
+      if (sort === "high") {
+
+        return [...result].sort(
+          (a, b) =>
+            b.price - a.price
+        );
+      }
+
+      if (sort === "rating") {
+
+        return [...result].sort(
+          (a, b) =>
+            b.rating - a.rating
+        );
+      }
+
+      return result;
+
+    }, [
+      search,
+      category,
+      sort,
+    ]);
 
   /* =========================
-     RENDER
+     CURRENT LOCATION
   ========================= */
 
-  const location = useLocation();
+  const location =
+    useLocation();
 
-  if (location.pathname.startsWith("/product/")) {
+  /* =========================
+     PRODUCT PAGE
+  ========================= */
+
+  if (
+    location.pathname.startsWith(
+      "/product/"
+    )
+  ) {
+
     return (
       <ProductPage
         products={products}
         wishlist={wishlist}
-        toggleWishlist={toggleWishlist}
+        toggleWishlist={
+          toggleWishlist
+        }
         addToCart={addToCart}
         setCartOpen={setCartOpen}
       />
     );
   }
+
+  /* =========================
+     MAIN WEBSITE
+  ========================= */
 
   return (
     <div className="app">
@@ -715,11 +1302,23 @@ function KiaFashionApp() {
       ========================= */}
 
       <div className="announcement">
-        <span>FREE SHIPPING OVER ₹2,500</span>
+
+        <span>
+          FREE SHIPPING OVER ₹2,500
+        </span>
+
         <span>•</span>
-        <span>EASY RETURNS</span>
+
+        <span>
+          EASY RETURNS
+        </span>
+
         <span>•</span>
-        <span>COD AVAILABLE</span>
+
+        <span>
+          COD AVAILABLE
+        </span>
+
       </div>
 
       {/* =========================
@@ -731,7 +1330,11 @@ function KiaFashionApp() {
         <button
           type="button"
           className="menu-button"
-          onClick={() => setMenuOpen((value) => !value)}
+          onClick={() =>
+            setMenuOpen(
+              (value) => !value
+            )
+          }
           aria-label="Open menu"
         >
           ☰
@@ -740,39 +1343,61 @@ function KiaFashionApp() {
         <button
           type="button"
           className="logo"
-          onClick={() => scrollTo("home")}
+          onClick={() =>
+            scrollTo("home")
+          }
         >
           <span>KIA</span>
           <small>FASHION</small>
         </button>
 
         <div className="location">
-          <small>Deliver to</small>
-          <strong>India ▾</strong>
+
+          <small>
+            Deliver to
+          </small>
+
+          <strong>
+            India ▾
+          </strong>
+
         </div>
 
-        {/* DESKTOP SEARCH */}
+        {/* =========================
+            DESKTOP SEARCH
+        ========================= */}
 
         <div className="desktop-search">
 
           <select
             value={category}
             onChange={(e) =>
-              setCategory(e.target.value)
+              setCategory(
+                e.target.value
+              )
             }
           >
-            {categories.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
+
+            {categories.map(
+              (item) => (
+                <option
+                  key={item}
+                  value={item}
+                >
+                  {item}
+                </option>
+              )
+            )}
+
           </select>
 
           <input
             type="text"
             value={search}
             onChange={(e) =>
-              setSearch(e.target.value)
+              setSearch(
+                e.target.value
+              )
             }
             placeholder="Search Kia Fashion"
           />
@@ -783,22 +1408,36 @@ function KiaFashionApp() {
           >
             ⌕
           </button>
+
         </div>
 
-        {/* ACCOUNT */}
+        {/* =========================
+            ACCOUNT
+        ========================= */}
 
         <button
           type="button"
           className="header-link account"
           onClick={() =>
-            alert("Welcome to Kia Fashion")
+            alert(
+              "Welcome to Kia Fashion"
+            )
           }
         >
-          <small>Hello, sign in</small>
-          <strong>Account & Lists</strong>
+
+          <small>
+            Hello, sign in
+          </small>
+
+          <strong>
+            Account & Lists
+          </strong>
+
         </button>
 
-        {/* ORDERS */}
+        {/* =========================
+            ORDERS
+        ========================= */}
 
         <button
           type="button"
@@ -809,34 +1448,60 @@ function KiaFashionApp() {
             )
           }
         >
-          <small>Returns</small>
-          <strong>& Orders</strong>
+
+          <small>
+            Returns
+          </small>
+
+          <strong>
+            & Orders
+          </strong>
+
         </button>
 
-        {/* CART */}
+        {/* =========================
+            CART
+        ========================= */}
 
         <button
           type="button"
           className="cart-button"
-          onClick={() => setCartOpen(true)}
+          onClick={() =>
+            setCartOpen(true)
+          }
         >
-          <span>🛒</span>
-          <b>{cartCount}</b>
-          <strong>Cart</strong>
+
+          <span>
+            🛒
+          </span>
+
+          <b>
+            {cartCount}
+          </b>
+
+          <strong>
+            Cart
+          </strong>
+
         </button>
 
-        {/* MOBILE SEARCH */}
+        {/* =========================
+            MOBILE SEARCH
+        ========================= */}
 
         <button
           type="button"
           className="mobile-search-button"
           onClick={() =>
-            setMobileSearch((value) => !value)
+            setMobileSearch(
+              (value) => !value
+            )
           }
           aria-label="Search"
         >
           🔍
         </button>
+
       </header>
 
       {/* =========================
@@ -844,6 +1509,7 @@ function KiaFashionApp() {
       ========================= */}
 
       {mobileSearch && (
+
         <div className="mobile-search">
 
           <input
@@ -851,7 +1517,9 @@ function KiaFashionApp() {
             type="text"
             value={search}
             onChange={(e) =>
-              setSearch(e.target.value)
+              setSearch(
+                e.target.value
+              )
             }
             placeholder="Search sarees, kidswear..."
           />
@@ -864,6 +1532,7 @@ function KiaFashionApp() {
           >
             Search
           </button>
+
         </div>
       )}
 
@@ -876,9 +1545,12 @@ function KiaFashionApp() {
           menuOpen ? "show" : ""
         }`}
       >
+
         <button
           type="button"
-          onClick={() => scrollTo("home")}
+          onClick={() =>
+            scrollTo("home")
+          }
         >
           Home
         </button>
@@ -894,14 +1566,18 @@ function KiaFashionApp() {
 
         <button
           type="button"
-          onClick={() => scrollTo("shop")}
+          onClick={() =>
+            scrollTo("shop")
+          }
         >
           Sarees
         </button>
 
         <button
           type="button"
-          onClick={() => scrollTo("kids")}
+          onClick={() =>
+            scrollTo("kids")
+          }
         >
           Kidswear
         </button>
@@ -917,17 +1593,22 @@ function KiaFashionApp() {
 
         <button
           type="button"
-          onClick={() => scrollTo("about")}
+          onClick={() =>
+            scrollTo("about")
+          }
         >
           Our Story
         </button>
 
         <button
           type="button"
-          onClick={() => scrollTo("contact")}
+          onClick={() =>
+            scrollTo("contact")
+          }
         >
           Customer Care
         </button>
+
       </nav>
 
       {/* =========================
@@ -936,12 +1617,15 @@ function KiaFashionApp() {
 
       <main>
 
-        {/* HERO */}
+        {/* =========================
+            HERO
+        ========================= */}
 
         <section
           id="home"
           className="hero"
         >
+
           <img
             src="/image/hero-saree.jpg"
             alt="Kia Fashion collection"
@@ -956,22 +1640,29 @@ function KiaFashionApp() {
             <h1>
               Elegance,
               <br />
-              <em>reimagined.</em>
+              <em>
+                reimagined.
+              </em>
             </h1>
 
             <p>
-              Graceful sarees and joyful kidswear
-              for moments worth remembering.
+              Graceful sarees and joyful
+              kidswear for moments worth
+              remembering.
             </p>
 
             <button
               type="button"
-              onClick={() => scrollTo("shop")}
+              onClick={() =>
+                scrollTo("shop")
+              }
             >
-              Explore Collection <span>→</span>
+              Explore Collection
+              <span>→</span>
             </button>
 
           </div>
+
         </section>
 
         {/* =========================
@@ -981,35 +1672,83 @@ function KiaFashionApp() {
         <section className="benefits">
 
           <div>
-            <span>🚚</span>
+
+            <span>
+              🚚
+            </span>
+
             <section>
-              <strong>Free Delivery</strong>
-              <small>Orders over ₹2,500</small>
+
+              <strong>
+                Free Delivery
+              </strong>
+
+              <small>
+                Orders over ₹2,500
+              </small>
+
             </section>
+
           </div>
 
           <div>
-            <span>↩</span>
+
+            <span>
+              ↩
+            </span>
+
             <section>
-              <strong>Easy Returns</strong>
-              <small>Simple return policy</small>
+
+              <strong>
+                Easy Returns
+              </strong>
+
+              <small>
+                Simple return policy
+              </small>
+
             </section>
+
           </div>
 
           <div>
-            <span>🔒</span>
+
+            <span>
+              🔒
+            </span>
+
             <section>
-              <strong>Secure Payments</strong>
-              <small>100% secure checkout</small>
+
+              <strong>
+                Secure Payments
+              </strong>
+
+              <small>
+                100% secure checkout
+              </small>
+
             </section>
+
           </div>
 
           <div>
-            <span>₹</span>
+
+            <span>
+              ₹
+            </span>
+
             <section>
-              <strong>Cash on Delivery</strong>
-              <small>Available across India</small>
+
+              <strong>
+                Cash on Delivery
+              </strong>
+
+              <small>
+                Available across India
+              </small>
+
             </section>
+
           </div>
 
         </section>
@@ -1026,18 +1765,25 @@ function KiaFashionApp() {
           <div className="section-title">
 
             <div>
+
               <span className="eyebrow">
                 CURATED FOR YOU
               </span>
 
               <h2>
-                Shop by <em>collection</em>
+                Shop by{" "}
+                <em>
+                  collection
+                </em>
               </h2>
+
             </div>
 
             <button
               type="button"
-              onClick={() => scrollTo("shop")}
+              onClick={() =>
+                scrollTo("shop")
+              }
             >
               See all →
             </button>
@@ -1046,34 +1792,49 @@ function KiaFashionApp() {
 
           <div className="collection-row">
 
-            {collections.map((item) => (
-              <button
-                type="button"
-                className="collection-card"
-                key={item.title}
-                onClick={() =>
-                  selectCategory(item.category)
-                }
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  loading="lazy"
-                />
+            {collections.map(
+              (item) => (
 
-                <div>
-                  <span>{item.text}</span>
+                <button
+                  type="button"
+                  className="collection-card"
+                  key={item.title}
+                  onClick={() =>
+                    selectCategory(
+                      item.category
+                    )
+                  }
+                >
 
-                  <h3>{item.title}</h3>
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    loading="lazy"
+                  />
 
-                  <small>
-                    Shop now →
-                  </small>
-                </div>
-              </button>
-            ))}
+                  <div>
+
+                    <span>
+                      {item.text}
+                    </span>
+
+                    <h3>
+                      {item.title}
+                    </h3>
+
+                    <small>
+                      Shop now →
+                    </small>
+
+                  </div>
+
+                </button>
+
+              )
+            )}
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1088,13 +1849,18 @@ function KiaFashionApp() {
           <div className="section-title">
 
             <div>
+
               <span className="eyebrow">
                 KIA FASHION STORE
               </span>
 
               <h2>
-                Best Sellers <em>& Deals</em>
+                Best Sellers{" "}
+                <em>
+                  & Deals
+                </em>
               </h2>
+
             </div>
 
             <span className="results">
@@ -1109,31 +1875,38 @@ function KiaFashionApp() {
 
             <div className="category-pills">
 
-              {categories.map((item) => (
-                <button
-                  type="button"
-                  key={item}
-                  className={
-                    category === item
-                      ? "selected"
-                      : ""
-                  }
-                  onClick={() =>
-                    setCategory(item)
-                  }
-                >
-                  {item}
-                </button>
-              ))}
+              {categories.map(
+                (item) => (
+
+                  <button
+                    type="button"
+                    key={item}
+                    className={
+                      category === item
+                        ? "selected"
+                        : ""
+                    }
+                    onClick={() =>
+                      setCategory(item)
+                    }
+                  >
+                    {item}
+                  </button>
+
+                )
+              )}
 
             </div>
 
             <select
               value={sort}
               onChange={(e) =>
-                setSort(e.target.value)
+                setSort(
+                  e.target.value
+                )
               }
             >
+
               <option value="featured">
                 Featured
               </option>
@@ -1149,6 +1922,7 @@ function KiaFashionApp() {
               <option value="rating">
                 Customer Rating
               </option>
+
             </select>
 
           </div>
@@ -1158,18 +1932,33 @@ function KiaFashionApp() {
           <div className="product-grid">
 
             {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  wishlist={wishlist}
-                  toggleWishlist={toggleWishlist}
-                  addToCart={addToCart}
-                  setPreview={setPreview}
-                  setCartOpen={setCartOpen}
-                />
-              ))
+
+              filteredProducts.map(
+                (product) => (
+
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    wishlist={wishlist}
+                    toggleWishlist={
+                      toggleWishlist
+                    }
+                    addToCart={
+                      addToCart
+                    }
+                    setPreview={
+                      setPreview
+                    }
+                    setCartOpen={
+                      setCartOpen
+                    }
+                  />
+
+                )
+              )
+
             ) : (
+
               <div className="no-products">
 
                 <h3>
@@ -1177,7 +1966,8 @@ function KiaFashionApp() {
                 </h3>
 
                 <p>
-                  Try another search or category.
+                  Try another search or
+                  category.
                 </p>
 
                 <button
@@ -1191,9 +1981,11 @@ function KiaFashionApp() {
                 </button>
 
               </div>
+
             )}
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1223,21 +2015,24 @@ function KiaFashionApp() {
             </h2>
 
             <p>
-              Rich colours, graceful drapes and
-              beautiful details for your most
-              memorable occasions.
+              Rich colours, graceful drapes
+              and beautiful details for your
+              most memorable occasions.
             </p>
 
             <button
               type="button"
               onClick={() =>
-                setCategory("Festive Saree")
+                setCategory(
+                  "Festive Saree"
+                )
               }
             >
               Explore Festive →
             </button>
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1252,20 +2047,26 @@ function KiaFashionApp() {
           <div className="section-title">
 
             <div>
+
               <span className="eyebrow">
                 FOR KI & KIDDOS
               </span>
 
               <h2>
                 Little style,
-                <em> big moments.</em>
+                <em>
+                  {" "}big moments.
+                </em>
               </h2>
+
             </div>
 
             <button
               type="button"
               onClick={() =>
-                selectCategory("Kidswear")
+                selectCategory(
+                  "Kidswear"
+                )
               }
             >
               Shop Kidswear →
@@ -1282,6 +2083,7 @@ function KiaFashionApp() {
                   "Kidswear"
               )
               .map((product) => (
+
                 <ProductCard
                   key={product.id}
                   product={product}
@@ -1289,13 +2091,21 @@ function KiaFashionApp() {
                   toggleWishlist={
                     toggleWishlist
                   }
-                  addToCart={addToCart}
-                  setPreview={setPreview}
-                  setCartOpen={setCartOpen}
+                  addToCart={
+                    addToCart
+                  }
+                  setPreview={
+                    setPreview
+                  }
+                  setCartOpen={
+                    setCartOpen
+                  }
                 />
+
               ))}
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1310,42 +2120,53 @@ function KiaFashionApp() {
           <div className="section-title">
 
             <div>
+
               <span className="eyebrow">
                 KIA STYLE STUDIO
               </span>
 
               <h2>
                 Dress for{" "}
-                <em>the moment.</em>
+                <em>
+                  the moment.
+                </em>
               </h2>
+
             </div>
 
           </div>
 
           <div className="style-row">
 
-            {styleEdits.map((item) => (
-              <button
-                type="button"
-                className="style-card"
-                key={item.title}
-                onClick={() =>
-                  scrollTo("shop")
-                }
-              >
-                <img
-                  src={item.image}
-                  alt={item.title}
-                  loading="lazy"
-                />
+            {styleEdits.map(
+              (item) => (
 
-                <span>
-                  {item.title} →
-                </span>
-              </button>
-            ))}
+                <button
+                  type="button"
+                  className="style-card"
+                  key={item.title}
+                  onClick={() =>
+                    scrollTo("shop")
+                  }
+                >
+
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    loading="lazy"
+                  />
+
+                  <span>
+                    {item.title} →
+                  </span>
+
+                </button>
+
+              )
+            )}
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1371,18 +2192,22 @@ function KiaFashionApp() {
 
             <h2>
               Fashion for{" "}
-              <em>Ki & Kiddos.</em>
+              <em>
+                Ki & Kiddos.
+              </em>
             </h2>
 
             <p>
-              Kia Fashion brings elegant Indian
-              fashion and joyful kidswear together
-              in a warm, modern shopping experience.
+              Kia Fashion brings elegant
+              Indian fashion and joyful
+              kidswear together in a warm,
+              modern shopping experience.
             </p>
 
             <p>
               Beautiful fashion should feel
-              effortless, personal and memorable.
+              effortless, personal and
+              memorable.
             </p>
 
             <button
@@ -1395,6 +2220,7 @@ function KiaFashionApp() {
             </button>
 
           </div>
+
         </section>
 
         {/* =========================
@@ -1410,12 +2236,15 @@ function KiaFashionApp() {
           <h2>
             Something beautiful
             <br />
-            <em>is always coming.</em>
+            <em>
+              is always coming.
+            </em>
           </h2>
 
           <p>
             Get new collection updates,
-            styling inspiration and special offers.
+            styling inspiration and special
+            offers.
           </p>
 
           <div className="newsletter-form">
@@ -1452,14 +2281,22 @@ function KiaFashionApp() {
       >
 
         <div className="footer-brand">
-          <strong>KIA FASHION</strong>
+
+          <strong>
+            KIA FASHION
+          </strong>
+
           <p>
             Fashion for Ki & Kiddos.
           </p>
+
         </div>
 
         <div>
-          <h4>Shop</h4>
+
+          <h4>
+            Shop
+          </h4>
 
           <button
             type="button"
@@ -1487,10 +2324,14 @@ function KiaFashionApp() {
           >
             Collections
           </button>
+
         </div>
 
         <div>
-          <h4>Explore</h4>
+
+          <h4>
+            Explore
+          </h4>
 
           <button
             type="button"
@@ -1509,22 +2350,31 @@ function KiaFashionApp() {
           >
             Our Story
           </button>
+
         </div>
 
         <div>
-          <h4>Customer Care</h4>
+
+          <h4>
+            Customer Care
+          </h4>
 
           <p>
             Mon–Sat, 10 AM–6 PM
           </p>
 
-          <p>Easy returns</p>
+          <p>
+            Easy returns
+          </p>
 
-          <p>COD available</p>
+          <p>
+            COD available
+          </p>
 
           <p>
             Free shipping over ₹2,500
           </p>
+
         </div>
 
       </footer>
@@ -1534,8 +2384,10 @@ function KiaFashionApp() {
       ========================= */}
 
       <div className="copyright">
+
         © {new Date().getFullYear()} Kia Fashion.
         All rights reserved.
+
       </div>
 
       {/* =========================
@@ -1550,8 +2402,13 @@ function KiaFashionApp() {
             scrollTo("home")
           }
         >
-          <span>⌂</span>
+
+          <span>
+            ⌂
+          </span>
+
           Home
+
         </button>
 
         <button
@@ -1560,8 +2417,13 @@ function KiaFashionApp() {
             scrollTo("shop")
           }
         >
-          <span>⌕</span>
+
+          <span>
+            ⌕
+          </span>
+
           Shop
+
         </button>
 
         <button
@@ -1570,8 +2432,13 @@ function KiaFashionApp() {
             scrollTo("collections")
           }
         >
-          <span>✦</span>
+
+          <span>
+            ✦
+          </span>
+
           Collections
+
         </button>
 
         <button
@@ -1580,15 +2447,21 @@ function KiaFashionApp() {
             setCartOpen(true)
           }
         >
+
           <span className="mobile-cart-icon">
+
             🛒
 
             {cartCount > 0 && (
-              <b>{cartCount}</b>
+              <b>
+                {cartCount}
+              </b>
             )}
+
           </span>
 
           Cart
+
         </button>
 
       </div>
@@ -1598,6 +2471,7 @@ function KiaFashionApp() {
       ========================= */}
 
       {cartOpen && (
+
         <div
           className="overlay"
           onClick={() =>
@@ -1615,6 +2489,7 @@ function KiaFashionApp() {
             <div className="drawer-header">
 
               <div>
+
                 <span className="eyebrow">
                   YOUR KIA BAG
                 </span>
@@ -1622,6 +2497,7 @@ function KiaFashionApp() {
                 <h2>
                   Shopping Cart
                 </h2>
+
               </div>
 
               <button
@@ -1637,9 +2513,12 @@ function KiaFashionApp() {
             </div>
 
             {cart.length === 0 ? (
+
               <div className="empty-cart">
 
-                <span>🛒</span>
+                <span>
+                  🛒
+                </span>
 
                 <h3>
                   Your cart is empty
@@ -1661,94 +2540,103 @@ function KiaFashionApp() {
                 </button>
 
               </div>
+
             ) : (
+
               <>
 
                 <div className="cart-items">
 
-                  {cart.map((item) => (
-                    <div
-                      className="cart-item"
-                      key={item.id}
-                    >
+                  {cart.map(
+                    (item) => (
 
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                      />
+                      <div
+                        className="cart-item"
+                        key={item.id}
+                      >
 
-                      <div className="cart-item-info">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                        />
 
-                        <span>
-                          {item.category}
-                        </span>
+                        <div className="cart-item-info">
 
-                        <h3>
-                          {item.name}
-                        </h3>
+                          <span>
+                            {item.category}
+                          </span>
 
-                        <strong>
-                          ₹
-                          {item.price.toLocaleString(
-                            "en-IN"
-                          )}
-                        </strong>
+                          <h3>
+                            {item.name}
+                          </h3>
 
-                        <div className="quantity">
+                          <strong>
+                            ₹
+                            {item.price.toLocaleString(
+                              "en-IN"
+                            )}
+                          </strong>
+
+                          <div className="quantity">
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  -1
+                                )
+                              }
+                            >
+                              −
+                            </button>
+
+                            <b>
+                              {item.quantity}
+                            </b>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  1
+                                )
+                              }
+                            >
+                              +
+                            </button>
+
+                          </div>
 
                           <button
                             type="button"
+                            className="delete"
                             onClick={() =>
-                              updateQuantity(
-                                item.id,
-                                -1
+                              removeFromCart(
+                                item.id
                               )
                             }
                           >
-                            −
-                          </button>
-
-                          <b>
-                            {item.quantity}
-                          </b>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              updateQuantity(
-                                item.id,
-                                1
-                              )
-                            }
-                          >
-                            +
+                            Remove
                           </button>
 
                         </div>
 
-                        <button
-                          type="button"
-                          className="delete"
-                          onClick={() =>
-                            removeFromCart(
-                              item.id
-                            )
-                          }
-                        >
-                          Remove
-                        </button>
-
                       </div>
 
-                    </div>
-                  ))}
+                    )
+                  )}
 
                 </div>
 
                 <div className="cart-summary">
 
                   <div>
-                    <span>Subtotal</span>
+
+                    <span>
+                      Subtotal
+                    </span>
 
                     <strong>
                       ₹
@@ -1756,6 +2644,7 @@ function KiaFashionApp() {
                         "en-IN"
                       )}
                     </strong>
+
                   </div>
 
                   <p>
@@ -1788,6 +2677,7 @@ function KiaFashionApp() {
                 </div>
 
               </>
+
             )}
 
           </aside>
@@ -1800,6 +2690,7 @@ function KiaFashionApp() {
       ========================= */}
 
       {preview && (
+
         <div
           className="overlay modal-overlay"
           onClick={() =>
@@ -1940,9 +2831,13 @@ function KiaFashionApp() {
                 type="button"
                 className="modal-add"
                 onClick={() => {
+
                   addToCart(preview);
+
                   setPreview(null);
+
                   setCartOpen(true);
+
                 }}
               >
                 🛒 Add to Cart
@@ -1963,10 +2858,17 @@ function KiaFashionApp() {
   );
 }
 
+/* =========================
+   APP
+========================= */
+
 export default function App() {
+
   return (
     <BrowserRouter>
+
       <KiaFashionApp />
+
     </BrowserRouter>
   );
 }
