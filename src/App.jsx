@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
+import { BrowserRouter, Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import "./App.css";
 
 /* =========================
    PRODUCTS
 ========================= */
 
-const products = [
+export const products = [
   {
     id: 1,
     name: "The Rose Silk Saree",
@@ -184,11 +185,13 @@ function ProductCard({
   return (
     <article className="product-card">
       <div className="product-image">
-        <img
-          src={product.image}
-          alt={product.name}
-          loading="lazy"
-        />
+        <Link to={`/product/${product.id}`} className="product-image-link" aria-label={`View ${product.name}`}>
+          <img
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+          />
+        </Link>
 
         <span className="deal-pill">{product.tag}</span>
 
@@ -220,7 +223,9 @@ function ProductCard({
           {product.category}
         </span>
 
-        <h3>{product.name}</h3>
+        <Link to={`/product/${product.id}`} className="product-name-link">
+          <h3>{product.name}</h3>
+        </Link>
 
         <div className="rating">
           <span className="rating-number">
@@ -276,10 +281,239 @@ function ProductCard({
 }
 
 /* =========================
+   PRODUCT DETAIL PAGE
+========================= */
+function ProductPage({
+  products,
+  wishlist,
+  toggleWishlist,
+  addToCart,
+  setCartOpen,
+}) {
+  const { productId } = useParams();
+  const navigate = useNavigate();
+  const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [pin, setPin] = useState("");
+  const [pinMessage, setPinMessage] = useState("");
+  const [activeImage, setActiveImage] = useState(0);
+
+  const product = products.find((item) => String(item.id) === String(productId));
+  const liked = product
+    ? wishlist.some((item) => item.id === product.id)
+    : false;
+
+  if (!product) {
+    return (
+      <div className="product-page-shell">
+        <div className="product-not-found">
+          <span className="eyebrow">KIA FASHION</span>
+          <h1>Product not found</h1>
+          <p>The product you are looking for is no longer available.</p>
+          <button type="button" onClick={() => navigate("/")}>← Back to Shopping</button>
+        </div>
+      </div>
+    );
+  }
+
+  const discount = Math.round(
+    ((product.oldPrice - product.price) / product.oldPrice) * 100
+  );
+
+  const gallery = [product.image];
+  const related = products
+    .filter((item) => item.id !== product.id && item.category === product.category)
+    .slice(0, 3);
+  const fallbackRelated = products
+    .filter((item) => item.id !== product.id && !related.some((r) => r.id === item.id))
+    .slice(0, 3 - related.length);
+  const relatedProducts = [...related, ...fallbackRelated];
+
+  const handleAddToCart = () => {
+    for (let i = 0; i < quantity; i += 1) addToCart(product);
+    setCartOpen(true);
+  };
+
+  const handleBuyNow = () => {
+    for (let i = 0; i < quantity; i += 1) addToCart(product);
+    setCartOpen(true);
+  };
+
+  const checkPin = () => {
+    if (!/^\d{6}$/.test(pin)) {
+      setPinMessage("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+    setPinMessage("Delivery is available to this PIN. Estimated delivery: 3–6 days.");
+  };
+
+  return (
+    <div className="product-page-shell">
+      <header className="product-page-header">
+        <button type="button" className="product-back" onClick={() => navigate(-1)}>
+          ← Back
+        </button>
+        <Link to="/" className="product-page-logo">
+          <span>KIA</span>
+          <small>FASHION</small>
+        </Link>
+        <button type="button" className="product-page-cart" onClick={() => setCartOpen(true)}>
+          🛒 Cart
+        </button>
+      </header>
+
+      <main className="product-detail">
+        <div className="breadcrumb">
+          <Link to="/">Home</Link><span>›</span><span>{product.category}</span><span>›</span><strong>{product.name}</strong>
+        </div>
+
+        <div className="product-detail-grid">
+          <section className="product-gallery">
+            <div className="product-thumbnails">
+              {gallery.map((image, index) => (
+                <button
+                  type="button"
+                  key={image + index}
+                  className={activeImage === index ? "active" : ""}
+                  onClick={() => setActiveImage(index)}
+                >
+                  <img src={image} alt={`${product.name} thumbnail ${index + 1}`} />
+                </button>
+              ))}
+            </div>
+            <div className="product-main-image">
+              <img src={gallery[activeImage]} alt={product.name} />
+              <span className="product-detail-badge">{product.tag}</span>
+              <button
+                type="button"
+                className={`detail-wishlist ${liked ? "active" : ""}`}
+                onClick={() => toggleWishlist(product)}
+                aria-label="Toggle wishlist"
+              >
+                {liked ? "♥" : "♡"}
+              </button>
+            </div>
+          </section>
+
+          <section className="product-information">
+            <span className="category-label">{product.category}</span>
+            <h1>{product.name}</h1>
+
+            <div className="detail-rating-row">
+              <span className="rating-number">{product.rating}</span>
+              <span className="stars">★★★★★</span>
+              <span className="reviews">{product.reviews} ratings & reviews</span>
+            </div>
+
+            <div className="detail-price-row">
+              <strong>₹{product.price.toLocaleString("en-IN")}</strong>
+              <del>₹{product.oldPrice.toLocaleString("en-IN")}</del>
+              <span>{discount}% off</span>
+            </div>
+            <p className="tax-note">Inclusive of all applicable taxes</p>
+
+            <div className="detail-divider" />
+
+            <p className="product-description">{product.description}</p>
+
+            <div className="detail-offers">
+              <strong>Special offers</strong>
+              <span>✓ Extra 10% off on selected products</span>
+              <span>✓ Free delivery on orders over ₹2,500</span>
+              <span>✓ Cash on Delivery available</span>
+            </div>
+
+            <div className="detail-option">
+              <div className="option-heading"><strong>Select Size</strong><span>Size Guide</span></div>
+              <div className="detail-sizes">
+                {["S", "M", "L", "XL"].map((size) => (
+                  <button
+                    type="button"
+                    key={size}
+                    className={selectedSize === size ? "selected" : ""}
+                    onClick={() => setSelectedSize(size)}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="detail-option">
+              <strong>Quantity</strong>
+              <div className="detail-quantity">
+                <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button>
+                <b>{quantity}</b>
+                <button type="button" onClick={() => setQuantity((value) => value + 1)}>+</button>
+              </div>
+            </div>
+
+            <div className="detail-actions">
+              <button type="button" className="detail-add" onClick={handleAddToCart}>🛒 Add to Cart</button>
+              <button type="button" className="detail-buy" onClick={handleBuyNow}>⚡ Buy Now</button>
+            </div>
+
+            <div className="pin-checker">
+              <strong>Check delivery</strong>
+              <div>
+                <input
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="Enter 6-digit PIN code"
+                  inputMode="numeric"
+                />
+                <button type="button" onClick={checkPin}>Check</button>
+              </div>
+              {pinMessage && <p>{pinMessage}</p>}
+            </div>
+
+            <div className="service-points">
+              <div><span>🚚</span><section><strong>Free Delivery</strong><small>On orders over ₹2,500</small></section></div>
+              <div><span>↩</span><section><strong>Easy Returns</strong><small>Simple return policy</small></section></div>
+              <div><span>🔒</span><section><strong>Secure Checkout</strong><small>Your payment is protected</small></section></div>
+            </div>
+          </section>
+        </div>
+
+        <section className="product-detail-info">
+          <div><span className="eyebrow">PRODUCT DETAILS</span><h2>Made for beautiful moments.</h2></div>
+          <div className="detail-info-grid">
+            <div><strong>Category</strong><span>{product.category}</span></div>
+            <div><strong>Collection</strong><span>Kia Fashion</span></div>
+            <div><strong>Availability</strong><span>In stock</span></div>
+            <div><strong>Delivery</strong><span>Across India</span></div>
+          </div>
+          <div className="shipping-note">
+            <strong>Shipping & Returns</strong>
+            <p>Orders are carefully packed before dispatch. Delivery time depends on your location. Please check the product and size before placing your order.</p>
+          </div>
+        </section>
+
+        {relatedProducts.length > 0 && (
+          <section className="related-products">
+            <div className="section-title"><div><span className="eyebrow">YOU MAY ALSO LIKE</span><h2>More <em>from Kia</em></h2></div></div>
+            <div className="related-grid">
+              {relatedProducts.map((item) => (
+                <Link className="related-card" to={`/product/${item.id}`} key={item.id}>
+                  <div><img src={item.image} alt={item.name} /><span>{item.tag}</span></div>
+                  <small>{item.category}</small>
+                  <h3>{item.name}</h3>
+                  <strong>₹{item.price.toLocaleString("en-IN")}</strong>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* =========================
    MAIN APP
 ========================= */
 
-export default function App() {
+function KiaFashionApp() {
   const [cart, setCart] = useState([]);
   const [wishlist, setWishlist] = useState([]);
   const [search, setSearch] = useState("");
@@ -458,6 +692,20 @@ export default function App() {
   /* =========================
      RENDER
   ========================= */
+
+  const location = useLocation();
+
+  if (location.pathname.startsWith("/product/")) {
+    return (
+      <ProductPage
+        products={products}
+        wishlist={wishlist}
+        toggleWishlist={toggleWishlist}
+        addToCart={addToCart}
+        setCartOpen={setCartOpen}
+      />
+    );
+  }
 
   return (
     <div className="app">
@@ -1712,5 +1960,13 @@ export default function App() {
       )}
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <KiaFashionApp />
+    </BrowserRouter>
   );
 }
